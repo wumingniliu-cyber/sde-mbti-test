@@ -14,64 +14,57 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. 靶向级 UI 引擎注入 (彻底抹杀白色框，重塑赛博全息感) ---
+# --- 2. 靶向级 UI 引擎注入 (彻底抹杀白色框与浅色模式干扰) ---
 st.markdown("""
 <style>
-    /* 1. 强制深空背景 */
-    .stApp { background-color: #030712 !important; }
-    [data-testid="stAppViewContainer"] { 
-        background-color: transparent !important;
+    /* 1. 强制全局深空背景，最高优先级抵抗系统浅色模式 */
+    body, .stApp, [data-testid="stAppViewContainer"], .main { 
+        background-color: #030712 !important; 
         background-image: 
             radial-gradient(circle at 50% 0%, #0f172a 0%, #030712 80%),
             linear-gradient(0deg, rgba(0,243,255,0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(0,243,255,0.03) 1px, transparent 1px) !important;
         background-size: 100% 100%, 30px 30px, 30px 30px !important;
+        color: #f8fafc !important;
     }
     
+    /* 强制所有文本颜色为亮色，杜绝黑字白底 */
     .stMarkdown, p, span, h1, h2, h3, h4, li, div { color: #f8fafc !important; }
     
-    /* 2. 标题与高定光感 */
+    /* 2. 封面标题高定光感 */
     .hero-title { 
-        font-size: 40px !important; font-weight: 900 !important; text-align: center; 
+        font-size: 38px !important; font-weight: 900 !important; text-align: center; 
         color: #ffffff !important; letter-spacing: 3px; margin-bottom: 5px;
         text-shadow: 0 0 20px rgba(0,243,255,0.8), 0 0 40px rgba(0,243,255,0.5);
     }
     .hero-subtitle { text-align: center; color: #00f3ff !important; font-size: 13px; letter-spacing: 5px; opacity: 0.9; margin-bottom: 30px; font-family: monospace; }
     
     /* ========================================================
-       3. 彻底重构选项按钮 (再也不会出现白色框！)
+       3. 统一接管所有按钮 (彻底抛弃 Streamlit 默认样式)
        ======================================================== */
-    button[data-testid="baseButton-secondary"] {
+    div.stButton > button {
         background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.95)) !important; 
         border: 1px solid rgba(0, 243, 255, 0.3) !important; 
-        border-left: 4px solid rgba(0, 243, 255, 0.6) !important; /* 赛博侧边能量条 */
+        border-left: 4px solid rgba(0, 243, 255, 0.6) !important; 
         border-radius: 8px !important; min-height: 65px !important; width: 100% !important;
         padding: 12px 20px !important; text-align: left !important;
         box-shadow: 0 5px 15px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,243,255,0.05) !important; 
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         margin-bottom: 8px !important;
     }
-    button[data-testid="baseButton-secondary"] p { 
+    div.stButton > button p { 
         color: #e2e8f0 !important; font-size: 15px !important; line-height: 1.6 !important; 
         white-space: normal !important; font-weight: 500 !important; letter-spacing: 1px;
     }
     /* 悬停态：荧光爆发与右移 */
-    button[data-testid="baseButton-secondary"]:hover { 
+    div.stButton > button:hover { 
         background: linear-gradient(90deg, rgba(0, 243, 255, 0.2) 0%, rgba(15, 23, 42, 0.9) 100%) !important; 
         border-color: #00f3ff !important; border-left: 6px solid #00f3ff !important;
         box-shadow: 0 0 25px rgba(0,243,255,0.3), inset 0 0 15px rgba(0,243,255,0.2) !important; 
-        transform: translateX(6px) !important; 
+        transform: translateX(4px) !important; 
     }
-    button[data-testid="baseButton-secondary"]:hover p { color: #ffffff !important; text-shadow: 0 0 8px #00f3ff; }
-    button[data-testid="baseButton-secondary"]:active { transform: scale(0.98) !important; }
-
-    /* 操作按钮 (Primary) */
-    button[data-testid="baseButton-primary"] {
-        background: linear-gradient(90deg, #00f3ff, #0088ff) !important; border: none !important; border-radius: 8px !important;
-        min-height: 65px !important; width: 100% !important; box-shadow: 0 0 25px rgba(0,243,255,0.4) !important; transition: all 0.2s !important;
-    }
-    button[data-testid="baseButton-primary"] p { color: #030712 !important; font-weight: 900 !important; font-size: 18px !important; letter-spacing: 2px !important; }
-    button[data-testid="baseButton-primary"]:hover { transform: translateY(-2px) scale(1.02) !important; box-shadow: 0 0 40px rgba(0,243,255,0.8) !important; }
+    div.stButton > button:hover p { color: #ffffff !important; text-shadow: 0 0 8px #00f3ff; }
+    div.stButton > button:active { transform: scale(0.98) !important; }
     
     /* 4. 进度条发光 */
     .stProgress > div > div > div > div { background-image: linear-gradient(90deg, #00f3ff, #ff00ff) !important; box-shadow: 0 0 15px rgba(0, 243, 255, 0.8) !important; }
@@ -177,14 +170,6 @@ mbti_details = {
     "ESFP": {"role": "公共关系与外联大使", "desc": "交易所形象代言人，天生具备将复杂的业务逻辑转化为大众传播话术的天赋。", "tags": ["表现力", "当下主义", "快乐源泉"], "partner": "ISFP (视觉美学节点) / ENFP (创意破局节点)", "advice": "花时间深潜研究数据要素的底层逻辑与政策文件。将你的绝佳表现力建立在扎实的产业根基上，形成无可替代的权威影响力。"}
 }
 
-job_models = {
-    "合规风控官": {"E": -2, "S": 5, "T": 5, "J": 5},
-    "数商生态总监": {"E": 6, "S": 1, "T": -2, "J": 0},
-    "数据产品专家": {"E": 2, "S": 3, "T": 3, "J": 2},
-    "行业战略智库": {"E": 0, "S": -4, "T": 4, "J": 1},
-    "清算结算骨干": {"E": -4, "S": 6, "T": 4, "J": 6}
-}
-
 # --- 5. 状态路由管理 ---
 if 'started' not in st.session_state: st.session_state.started = False
 if 'current_q' not in st.session_state: st.session_state.current_q = 0
@@ -204,34 +189,33 @@ def answer_clicked(val, dim):
 
 # --- 6. 渲染引擎 ---
 if not st.session_state.started:
+    # ====== 全息指令初始化大厅 ======
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 class='hero-title'>上海数据交易所<br>人才图谱全息引擎</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>▶ SDE MATRIX V18.0_READY</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-subtitle'>▶ SDE MATRIX V19.0_READY</div>", unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0,243,255,0.4); padding: 25px; border-radius: 12px; font-family: monospace; font-size: 14px; color: #e2e8f0; box-shadow: inset 0 0 20px rgba(0,243,255,0.1), 0 10px 30px rgba(0,0,0,0.8); margin-bottom: 40px;'>
+    <div style='background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0,243,255,0.4); padding: 25px; border-radius: 16px; font-family: monospace; font-size: 14px; color: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin-bottom: 40px;'>
         <span style='color:#94a3b8;'>[SYSTEM]</span> Establishing secure connection to SDE Core...<br>
         <span style='color:#94a3b8;'>[SYSTEM]</span> Loading Capability Matrix Algorithm... <span style='color:#00f3ff;'>[OK]</span><br>
         <span style='color:#10b981;'>[MODULE]</span> Initializing Synergy Network...<br><br>
-        <span style='color:#ffffff; font-size: 15px; font-family: sans-serif; line-height: 1.8;'>在数据要素化的高速演进中，业务创新与底线合规并存。本终端将深度扫描您的<b>底层能力雷达、决策模型与生态协同潜能</b>。请凭职场第一直觉响应指令。</span>
+        <span style='color:#ffffff; font-size: 15px; font-family: sans-serif; line-height: 1.8;'>在数据要素化的高速演进中，业务创新与底线合规并存。本终端将剥开表象，深度测算您的<b>底层能力雷达、协同偏好与生态构建潜能</b>。这是一场为赋能而生的深度解析。</span>
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("▶ 启动图谱解析引擎", type="primary", use_container_width=True):
+    if st.button("▶ 启动图谱解析引擎", use_container_width=True):
         start_assessment()
         st.rerun()
     
     st.markdown("<div style='text-align:center; color:#475569; font-size:12px; margin-top:50px;'>END-TO-END ENCRYPTED · SDE INTERNAL</div>", unsafe_allow_html=True)
 
 elif st.session_state.current_q < 40:
-    # ====== 新增亮点：全息数据块 HUD 答题界面 ======
+    # ====== 全息数据块 HUD 答题界面 ======
     q_data = questions[st.session_state.current_q]
     
-    # 根据维度生成高逼格模块名
+    # 动态模块名与哈希
     dim_map = {"E": "生态节点拓扑 (NODE_SYNERGY)", "S": "资产颗粒存证 (ASSET_GRANULARITY)", "T": "交易共识逻辑 (LOGIC_CONSENSUS)", "J": "架构秩序引擎 (SYS_GOVERNANCE)"}
     module_name = dim_map.get(q_data['dim'], "特征算力提取 (CORE_EXTRACTION)")
-    
-    # 生成动态校验哈希
     dynamic_hash = hashlib.sha256(f"{q_data['q']}{time.time()}".encode()).hexdigest()[:10].upper()
     
     st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
@@ -250,7 +234,6 @@ elif st.session_state.current_q < 40:
     </div>
     """, unsafe_allow_html=True)
     
-    # 选项带有量化前缀，增加仪式感
     opts = [
         ("[ 0% ] 拒绝指令：完全背离业务直觉", 1),
         ("[ 25% ] 偏离轨道：较不符合执行习惯", 2),
@@ -259,18 +242,21 @@ elif st.session_state.current_q < 40:
         ("[ 100% ] 强制锁定：完全复刻底层逻辑", 5)
     ]
     
+    # 移除 type 属性，利用上方的 CSS 统一接管
     for text, val in opts:
-        if st.button(text, type="secondary", key=f"q_{st.session_state.current_q}_{val}"):
+        if st.button(text, key=f"q_{st.session_state.current_q}_{val}"):
             answer_clicked(val, q_data['dim'])
             st.rerun()
 
 else:
+    # ====== 高定解析结果页 ======
     trigger_supernova()
     
     res = st.session_state.total_scores
     mbti = ("E" if res["E"] >= 0 else "I") + ("S" if res["S"] >= 0 else "N") + ("T" if res["T"] >= 0 else "F") + ("J" if res["J"] >= 0 else "P")
     data = mbti_details.get(mbti)
     
+    # 1. 核心结果
     st.markdown(f"""
     <div class="result-card">
         <div style="font-size:14px; color:#94a3b8; letter-spacing:4px; margin-bottom:15px; font-family:monospace;">MATRIX DECODED SUCCESSFULLY</div>
@@ -283,34 +269,72 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
+    # 2. 动态雷达图
     st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>🕸️ 核心能力拓扑矩阵</h4>", unsafe_allow_html=True)
+    
     def get_intensity(score): return max(15, min(100, 50 + (score / 20 * 50)))
     val_E, val_I = get_intensity(res["E"]), 100 - get_intensity(res["E"])
     val_S, val_N = get_intensity(res["S"]), 100 - get_intensity(res["S"])
     val_T, val_F = get_intensity(res["T"]), 100 - get_intensity(res["T"])
     val_J, val_P = get_intensity(res["J"]), 100 - get_intensity(res["J"])
+    
     categories = ['外向(E)', '实务(S)', '理性(T)', '秩序(J)', '内向(I)', '直觉(N)', '感性(F)', '灵活(P)']
     values = [val_E, val_S, val_T, val_J, val_I, val_N, val_F, val_P]
-    
     fig = go.Figure()
-    fig.add_trace(go.Scatterpolar(r=values + [values[0]], theta=categories + [categories[0]], fill='toself', fillcolor='rgba(0, 243, 255, 0.2)', line=dict(color='#00f3ff', width=2), marker=dict(color='#ffd700', size=6)))
-    fig.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100]), angularaxis=dict(tickfont=dict(color='#e2e8f0', size=13), linecolor='rgba(0,243,255,0.2)', gridcolor='rgba(0,243,255,0.1)')), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=35, r=35, t=20, b=20), height=300)
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]], theta=categories + [categories[0]], fill='toself',
+        fillcolor='rgba(0, 243, 255, 0.2)', line=dict(color='#00f3ff', width=2),
+        marker=dict(color='#ffd700', size=6)
+    ))
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=False, range=[0, 100]),
+            angularaxis=dict(tickfont=dict(color='#e2e8f0', size=13), linecolor='rgba(0,243,255,0.2)', gridcolor='rgba(0,243,255,0.1)')
+        ),
+        showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=35, r=35, t=20, b=20), height=300
+    )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
+    # 3. 业务决策偏好仪表 (修正了P维度的KeyError算法)
     st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>🎛️ 业务决策偏好仪表</h4>", unsafe_allow_html=True)
-    risk_score = max(5, min(95, 50 + (res["P"] * 1.5) - (res["S"] * 1.5)))
+    # 算法修正：用 -res["J"] 代表 P 维度的倾向
+    risk_score = max(5, min(95, 50 + (-res["J"] * 1.5) - (res["S"] * 1.5)))
+    
     if risk_score < 35: r_tag, r_color, r_desc = "严谨风控导向", "#4ade80", "行事稳健，对合规红线有天然敏锐度，适合把守数据存证与风控命脉。"
     elif risk_score < 65: r_tag, r_color, r_desc = "动态平衡导向", "#ffd700", "能够在政策框架内灵活捕捉机遇，适合主导数据产品架构与业务统筹。"
     else: r_tag, r_color, r_desc = "前沿开拓导向", "#f43f5e", "极度渴望打破思维定式，拥有极强创新力，能快速抢占新兴生态阵地。"
     
-    fig_gauge = go.Figure(go.Indicator(mode="gauge+number", value=risk_score, number={'suffix': "%", 'font': {'color': r_color, 'size': 35}}, title={'text': f"<span style='color:{r_color}; font-size:16px;'>{r_tag}</span>", 'font': {'color': '#94a3b8'}}, gauge={'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#334155"}, 'bar': {'color': r_color}, 'bgcolor': "rgba(255,255,255,0.05)", 'steps': [{'range': [0, 35], 'color': "rgba(74, 222, 128, 0.1)"}, {'range': [35, 65], 'color': "rgba(255, 215, 0, 0.1)"}, {'range': [65, 100], 'color': "rgba(244, 63, 94, 0.1)"}]}))
+    fig_gauge = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = risk_score,
+        number = {'suffix': "%", 'font': {'color': r_color, 'size': 35}},
+        title = {'text': f"<span style='color:{r_color}; font-size:16px;'>{r_tag}</span>", 'font': {'color': '#94a3b8'}},
+        gauge = {
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#334155"},
+            'bar': {'color': r_color},
+            'bgcolor': "rgba(255,255,255,0.05)",
+            'steps': [
+                {'range': [0, 35], 'color': "rgba(74, 222, 128, 0.1)"},
+                {'range': [35, 65], 'color': "rgba(255, 215, 0, 0.1)"},
+                {'range': [65, 100], 'color': "rgba(244, 63, 94, 0.1)"}],
+        }
+    ))
     fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "#94a3b8"}, height=250, margin=dict(l=20, r=20, t=30, b=0))
     st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
     st.markdown(f"<div style='color:#e2e8f0; font-size:13px; text-align:center; margin-top:-20px; margin-bottom:20px;'>{r_desc}</div>", unsafe_allow_html=True)
 
+    # 4. 生态协同与赋能指南
     st.markdown("<h4 style='color:#10b981; border-left:4px solid #10b981; padding-left:10px;'>💡 职场生态协同指南</h4>", unsafe_allow_html=True)
-    st.markdown(f"<div class='synergy-box'><div class='synergy-title'>[ 黄金协作搭档 ]</div><div style='margin-bottom:15px; color:#ffffff; font-weight:bold;'>{data['partner']}</div><div class='synergy-title'>[ 职场进阶建议 ]</div><div>{data['advice']}</div></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class='synergy-box'>
+        <div class='synergy-title'>[ 黄金协作搭档 ]</div>
+        <div style='margin-bottom:15px; color:#ffffff; font-weight:bold;'>{data['partner']}</div>
+        <div class='synergy-title'>[ 职场进阶建议 ]</div>
+        <div>{data['advice']}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # 5. 社交名片标识
     time_taken = st.session_state.end_time - st.session_state.start_time
     st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>💠 专属数字身份标识</h4>", unsafe_allow_html=True)
     hash_code = hex(hash(mbti + str(time_taken) + str(res["S"])))[-10:].upper()
@@ -325,13 +349,15 @@ else:
     st.markdown(f"<div style='background:#111827; padding:15px; border-radius:8px; font-family:monospace; font-size:13px; color:#ffffff; border:1px solid #334155; white-space:pre-wrap;'>{share_card}</div>", unsafe_allow_html=True)
     st.caption("☝️ 点击右上方复制按钮，或长按文本区发至微信分享你的专属图谱。")
 
+    # 底部重启
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("重启引擎系统 RESET()", type="primary", use_container_width=True):
+    if st.button("重启引擎系统 RESET()", use_container_width=True):
         st.session_state.started = False
         st.session_state.current_q = 0
         st.session_state.total_scores = {"E": 0, "S": 0, "T": 0, "J": 0}
         st.rerun()
 
+# --- 7. 专属高亮版权 ---
 st.markdown("""
     <div style='text-align:center; margin-top:50px; margin-bottom:20px; font-family:monospace;'>
         <div style='color:#00f3ff; font-size:11px; opacity:0.5; letter-spacing:2px; margin-bottom:5px;'>
