@@ -13,111 +13,91 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. 殿堂级 UI 引擎与动效注入 ---
+# --- 2. 靶向级 UI 引擎注入 ---
 st.markdown("""
 <style>
-    /* 1. 沉浸式深空背景 */
+    /* 1. 强制深空背景 */
+    .stApp { background-color: #030712 !important; }
     [data-testid="stAppViewContainer"] { 
-        background-color: #050a15 !important; 
+        background-color: transparent !important;
         background-image: 
-            radial-gradient(circle at 50% 0%, #112240 0%, #050a15 60%),
+            radial-gradient(circle at 50% 0%, #0f172a 0%, #030712 80%),
             linear-gradient(0deg, rgba(0,243,255,0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(0,243,255,0.03) 1px, transparent 1px) !important;
         background-size: 100% 100%, 30px 30px, 30px 30px !important;
     }
     
-    /* 强制高对比度文本，告别模糊 */
-    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp p, .stApp span, .stApp div { color: #f8fafc; }
+    /* 2. 强制全局文本 */
+    .stMarkdown, p, span, h1, h2, h3, h4, li, div { color: #f8fafc !important; }
     
-    /* 2. 封面与标题高定光感 */
+    /* 3. 标题与高定光感 */
     .hero-title { 
-        font-size: 38px !important; font-weight: 900 !important; text-align: center; 
-        color: #ffffff !important; letter-spacing: 3px; margin-bottom: 10px;
-        text-shadow: 0 0 20px rgba(0,243,255,0.8), 0 0 40px rgba(0,243,255,0.4);
+        font-size: 40px !important; font-weight: 900 !important; text-align: center; 
+        color: #ffffff !important; letter-spacing: 3px; margin-bottom: 5px;
+        text-shadow: 0 0 20px rgba(0,243,255,0.8), 0 0 40px rgba(0,243,255,0.5);
     }
-    .hero-subtitle {
-        text-align: center; color: #00f3ff !important; font-size: 14px; 
-        letter-spacing: 4px; opacity: 0.8; margin-bottom: 40px; font-family: monospace;
+    .hero-subtitle { text-align: center; color: #00f3ff !important; font-size: 13px; letter-spacing: 5px; opacity: 0.9; margin-bottom: 30px; font-family: monospace; }
+    
+    /* 4. 靶向接管选项按钮 */
+    button[data-testid="baseButton-secondary"] {
+        background-color: #0f172a !important; 
+        border: 1px solid rgba(0, 243, 255, 0.3) !important; 
+        border-radius: 12px !important; min-height: 65px !important; width: 100% !important;
+        padding: 12px 20px !important; text-align: left !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    .hero-desc {
-        background: rgba(15, 23, 42, 0.8); border-left: 4px solid #00f3ff;
-        padding: 25px; border-radius: 12px; line-height: 1.8; font-size: 15px;
-        color: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 40px;
-    }
+    button[data-testid="baseButton-secondary"] p { color: #ffffff !important; font-size: 16px !important; line-height: 1.6 !important; white-space: normal !important; font-weight: 500 !important; }
+    button[data-testid="baseButton-secondary"]:hover { background-color: rgba(0, 243, 255, 0.1) !important; border-color: #00f3ff !important; box-shadow: 0 0 20px rgba(0,243,255,0.3) !important; transform: translateX(4px) !important; }
+    button[data-testid="baseButton-secondary"]:hover p { color: #00f3ff !important; }
+    button[data-testid="baseButton-secondary"]:active { transform: scale(0.98) !important; }
 
-    /* 3. 互动感拉满的启动按钮 */
-    .start-btn > div > button {
-        width: 100% !important; height: 75px !important; font-size: 22px !important;
-        font-weight: 900 !important; border-radius: 16px !important; color: #050a15 !important;
-        background: linear-gradient(90deg, #00f3ff, #00b7ff) !important;
-        border: none !important; transition: all 0.2s ease !important;
-        box-shadow: 0 0 20px rgba(0,243,255,0.4), inset 0 0 10px rgba(255,255,255,0.5) !important;
-        letter-spacing: 2px !important;
+    /* 5. 靶向接管操作按钮 */
+    button[data-testid="baseButton-primary"] {
+        background: linear-gradient(90deg, #00f3ff, #0088ff) !important; border: none !important; border-radius: 12px !important;
+        min-height: 65px !important; width: 100% !important; box-shadow: 0 0 25px rgba(0,243,255,0.4) !important; transition: all 0.2s !important;
     }
-    .start-btn > div > button:hover {
-        transform: translateY(-3px) scale(1.02) !important;
-        box-shadow: 0 0 40px rgba(0,243,255,0.8), inset 0 0 15px rgba(255,255,255,0.8) !important;
-    }
-    .start-btn > div > button:active { transform: scale(0.95) !important; }
-
-    /* 4. 答题界面的阻尼感选项按钮 */
-    .question-btn > button {
-        width: 100% !important; min-height: 65px !important; border-radius: 12px !important;
-        background: rgba(15, 23, 42, 0.85) !important;
-        border: 1px solid rgba(0, 243, 255, 0.2) !important;
-        color: #ffffff !important; font-size: 16px !important; text-align: left !important;
-        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        padding: 12px 20px !important; line-height: 1.6 !important; font-weight: 500 !important;
-    }
-    .question-btn > button:hover { 
-        border-color: #00f3ff !important; background: rgba(0, 243, 255, 0.15) !important;
-        box-shadow: 0 0 15px rgba(0,243,255,0.3) !important; transform: translateX(5px);
-    }
-    .question-btn > button:active { background: #00f3ff !important; color: #050a15 !important; transform: scale(0.98); }
-
-    /* 5. 高对比度结果视窗 (解决看不清痛点) */
+    button[data-testid="baseButton-primary"] p { color: #030712 !important; font-weight: 900 !important; font-size: 18px !important; letter-spacing: 2px !important; }
+    button[data-testid="baseButton-primary"]:hover { transform: translateY(-2px) scale(1.02) !important; box-shadow: 0 0 40px rgba(0,243,255,0.8) !important; }
+    
+    /* 6. 结果视窗与协同赋能框 */
     .result-card {
-        padding: 40px 25px; border-radius: 20px; 
-        background: #0f172a; /* 深渊曜黑底色，确保文字对比度 */
-        border: 1px solid #334155; border-top: 6px solid #ffd700;
-        text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); margin-bottom: 30px;
+        padding: 40px 25px; border-radius: 20px; background-color: #0b1120 !important; 
+        border: 1px solid rgba(255,215,0,0.3); border-top: 6px solid #ffd700; 
+        text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9); margin-bottom: 30px;
     }
-    .mbti-code { font-size: 80px; font-weight: 900; color: #ffd700 !important; line-height: 1.1; letter-spacing: 2px; text-shadow: 0 0 30px rgba(255,215,0,0.5); margin: 0;}
-    .mbti-post { font-size: 24px; font-weight: bold; color: #00f3ff !important; margin: 15px 0; }
-    .mbti-desc { color: #ffffff !important; font-size: 16px; line-height: 1.8; opacity: 0.95; margin-bottom: 20px;}
-    .cyber-tag { background: #1e293b; color: #00f3ff !important; border: 1px solid #00f3ff; padding: 5px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; margin: 4px; display: inline-block; }
+    .mbti-code { font-size: 85px; font-weight: 900; color: #ffd700 !important; line-height: 1.1; letter-spacing: 2px; text-shadow: 0 0 30px rgba(255,215,0,0.5); margin: 0;}
+    .mbti-post { font-size: 22px; font-weight: bold; color: #00f3ff !important; margin: 15px 0; }
+    
+    /* 新增：生态协同赋能面板样式 */
+    .synergy-box { 
+        background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981; 
+        padding: 20px; border-radius: 8px; font-size: 14px; line-height: 1.7; 
+        color: #e2e8f0 !important; border-top: 1px solid rgba(16, 185, 129, 0.2); 
+        border-bottom: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16,185,129,0.05); margin: 15px 0 25px 0;
+    }
+    .synergy-title { color: #34d399 !important; font-weight: bold; font-size: 15px; margin-bottom: 8px; font-family: monospace;}
 
-    /* 6. 超新星中心炸裂动画 (重构物理引擎) */
-    .firework-center { 
-        position: fixed; top: 50%; left: 50%; z-index: 99999; pointer-events: none;
-        font-weight: 900; color: transparent; -webkit-text-stroke: 2px #00f3ff;
-        text-shadow: 0 0 20px #00f3ff, 0 0 40px #ffffff;
-        animation: supernova 2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
-    }
-    @keyframes supernova { 
-        0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 1; filter: brightness(2); } 
-        20% { opacity: 1; filter: brightness(3); }
-        100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(var(--s)) rotate(var(--rot)); opacity: 0; filter: brightness(1) hue-rotate(90deg); } 
-    }
+    /* 超新星炸裂动画 */
+    .firework-center { position: fixed; top: 50%; left: 50%; z-index: 99999; pointer-events: none; font-weight: 900; font-family: monospace; color: transparent; -webkit-text-stroke: 1.5px #00f3ff; text-shadow: 0 0 20px #00f3ff, 0 0 40px #ffffff; animation: supernova 2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+    @keyframes supernova { 0% { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 1; filter: brightness(2); } 20% { opacity: 1; filter: brightness(3); } 100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(var(--s)) rotate(var(--rot)); opacity: 0; filter: brightness(1) hue-rotate(180deg); } }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 物理引擎级爆炸生成器 ---
 def trigger_supernova():
     html_str = ""
+    symbols = ["666", "1", "0", "DATA", "SDE"]
     for _ in range(80): 
-        # 使用极坐标计算爆炸落点，确保360度无死角炸裂
         angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(300, 1000) # 爆炸半径
-        tx = distance * math.cos(angle)
-        ty = distance * math.sin(angle)
-        scale = random.uniform(1.5, 4.0)
+        distance = random.uniform(300, 1200)
+        tx, ty = distance * math.cos(angle), distance * math.sin(angle)
+        scale = random.uniform(1.2, 3.5)
         rot = random.randint(-360, 360)
-        delay = random.uniform(0, 0.3) # 缩短延迟，增强爆发感
-        html_str += f'<div class="firework-center" style="--tx:{tx}px; --ty:{ty}px; --s:{scale}; --rot:{rot}deg; animation-delay:{delay}s; font-size:28px;">666</div>'
+        delay = random.uniform(0, 0.2)
+        text = random.choice(symbols)
+        html_str += f'<div class="firework-center" style="--tx:{tx}px; --ty:{ty}px; --s:{scale}; --rot:{rot}deg; animation-delay:{delay}s; font-size:{random.randint(18, 32)}px;">{text}</div>'
     st.markdown(html_str, unsafe_allow_html=True)
 
-# --- 3. 专家级题库库 (全 40 道) ---
+# --- 3. 题库库 ---
 questions = [
     {"q": "面对数商生态中各方利益的博弈冲突，我倾向于亲自到现场进行高频次的调解与游说。", "dim": "E"},
     {"q": "代表交易所进行政策咨询时，我享受通过专业表达输出机构影响力的过程。", "dim": "E"},
@@ -161,34 +141,27 @@ questions = [
     {"q": "面对多线任务，我必须先梳理优先级并获得确认，才能安心执行。", "dim": "J"}
 ]
 
+# --- 4. 画像数据库 (正向协同与进阶版) ---
 mbti_details = {
-    "INTJ": {"role": "首席制度架构师 / CSO", "desc": "数据要素世界的“造物主”，致力于构建严密的数据治理公理体系。你坚信系统大于个人。", "tags": ["逻辑闭环", "顶层设计", "制度自信"]},
-    "INTP": {"role": "风控模型专家 / 首席科学家", "desc": "穿透迷雾，寻找业务背后底层的逻辑漏洞与算力平衡。你是极客精神的代表。", "tags": ["黑客思维", "算法驱动", "极致解构"]},
-    "ISTJ": {"role": "首席合规审查官 / 运营基石", "desc": "交易所的守夜人，你的名字本身就是安全、严谨、零失误的代名词。", "tags": ["绝对合规", "程序正义", "数据护法"]},
-    "ESTJ": {"role": "业务统筹总监 / COO", "desc": "无可争议的项目推进器，擅长将复杂的国家政策转化为可落地的KPI体系。", "tags": ["统帅力", "结果主义", "流程大师"]},
-    "INFJ": {"role": "产业生态智库 / 战略合伙人", "desc": "具备极强的行业共情能力，能精准预判数据流通对未来文明产生的深远变革。", "tags": ["远见卓识", "使命驱动", "人文视角"]},
-    "INFP": {"role": "品牌价值主张官 / 文化引领", "desc": "数据背后的灵魂捕捉者，擅长构建不仅专业而且动人的数商生态故事。", "tags": ["感召力", "价值观构建", "组织粘合"]},
-    "ENTJ": {"role": "市场开拓领军人 / 核心合伙人", "desc": "天生的掠夺者与建设者，在数据资源化、产品化的无人区中强势开路。", "tags": ["开疆拓土", "战略铁腕", "极速成交"]},
-    "ENTP": {"role": "产品创新顾问 / 业务极客", "desc": "交易规则的调皮破坏者，致力于通过跨界思维寻找下一代交易范式。", "tags": ["模式创新", "辩才无碍", "思维跳变"]},
-    "ENFJ": {"role": "数商成功与生态总监", "desc": "数交所的魅力中心，能通过卓越的共识构建能力，将竞争对手转化为盟友。", "tags": ["关系枢纽", "温情领导力", "利益协调"]},
-    "ENFP": {"role": "资源链接大使 / 活动策划主管", "desc": "充满感染力的生态火苗，让每一场路演都变成数据要素市场的信仰充值。", "tags": ["无限创意", "跨界纽带", "热情驱动"]},
-    "ISFJ": {"role": "高级行政主管 / 内部运营", "desc": "最坚韧的底层支点，于无声处通过极致细节支撑起整个平台的信誉。", "tags": ["利他主义", "执行力巅峰", "运营专家"]},
-    "ESFJ": {"role": "商务关系主管 / 渠道主管", "desc": "超级连接器，擅长经营多维度的商务关系，是前台业务的最强润滑剂。", "tags": ["协作典范", "细节控制", "社会化支撑"]},
-    "ISTP": {"role": "危机管理专家 / 技术压舱石", "desc": "数据底座的拆弹专家，只对事实和逻辑负责，是突发故障时的唯一指望。", "tags": ["极简实干", "危机直觉", "技术硬核"]},
-    "ISFP": {"role": "视觉交互与品牌设计专家", "desc": "赋予枯燥数据以美学价值，致力于提升资产评估与路演的颜值与质感。", "tags": ["审美溢价", "感官叙事", "独立纯粹"]},
-    "ESTP": {"role": "大客户成交官 / 谈判先锋", "desc": "数据交易的猎手，嗅觉极其灵敏，能捕捉到转瞬即逝的市场红利与空间。", "tags": ["现场感", "博弈高手", "结果收割"]},
-    "ESFP": {"role": "公共关系与外联大使", "desc": "交易所形象代言人，天生具备将复杂的业务逻辑转化为大众传播话术的天赋。", "tags": ["表现力", "当下主义", "快乐源泉"]}
+    "INTJ": {"role": "首席制度架构师 / CSO", "desc": "数据要素世界的“造物主”，致力于构建严密的数据治理公理体系。", "tags": ["逻辑闭环", "顶层设计", "制度自信"], "partner": "ENTJ (强效执行节点) / INTP (极客算法节点)", "advice": "在构建宏大的底层规则架构时，请适当为业务部门预留“沙盒容错”空间；倾听一线的非结构化反馈，能让你的制度更具生命力。"},
+    "INTP": {"role": "风控模型专家 / 首席科学家", "desc": "穿透迷雾，寻找业务背后底层的逻辑漏洞与算力平衡。你是极客精神的代表。", "tags": ["黑客思维", "算法驱动", "极致解构"], "partner": "INTJ (框架锚定节点) / ENTP (模式发散节点)", "advice": "尝试将你极其高维的理论模型降维封装，形成非技术人员也能看懂的业务SOP手册，避免陷入“理论完美但无法落地”的真空。"},
+    "ISTJ": {"role": "首席合规审查官 / 运营基石", "desc": "交易所的守夜人，你的名字本身就是安全、严谨、零失误的代名词。", "tags": ["绝对合规", "程序正义", "数据护法"], "partner": "ESTJ (业务推进节点) / ISFJ (后勤保障节点)", "advice": "在死守数据合规底线的同时，面对狂飙突进的创新产品，试着用“如何让它合规地上架”来代替“由于违规而否决”。"},
+    "ESTJ": {"role": "业务统筹总监 / COO", "desc": "无可争议的项目推进器，擅长将复杂的国家政策转化为可落地的KPI体系。", "tags": ["统帅力", "结果主义", "流程大师"], "partner": "ISTJ (品控审查节点) / ISTP (危机拆弹节点)", "advice": "在推进高压任务时，适度向团队释放情绪价值。一支拥有高凝聚力的生态团队，往往比单纯的数字化KPI走得更远。"},
+    "INFJ": {"role": "产业生态智库 / 战略合伙人", "desc": "具备极强的行业共情能力，能精准预判数据流通对未来文明产生的深远变革。", "tags": ["远见卓识", "使命驱动", "人文视角"], "partner": "ENFJ (共识布道节点) / ENFP (火种传播节点)", "advice": "学会用冰冷的财务报表、确权条文来锚定你的宏大产业愿景。将你的“先知感知”转化为具体的业务政策专报。"},
+    "INFP": {"role": "品牌价值主张官 / 文化引领", "desc": "数据背后的灵魂捕捉者，擅长构建不仅专业而且动人的数商生态故事。", "tags": ["感召力", "价值观构建", "组织粘合"], "partner": "ENFJ (外部护航节点) / ISFP (美学交互节点)", "advice": "在充满硝烟的跨部门资源博弈中，学会熟练利用合规准则和预算工具，勇敢捍卫你的核心价值主张，切勿因恐惧冲突而退让。"},
+    "ENTJ": {"role": "市场开拓领军人 / 核心合伙人", "desc": "天生的掠夺者与建设者，在数据资源化、产品化的无人区中强势开路。", "tags": ["开疆拓土", "战略铁腕", "极速成交"], "partner": "INTJ (战略智囊节点) / ISTP (技术攻坚节点)", "advice": "在极速开疆拓土时，请时刻保持与中台合规团队的数据同步。有时放慢半拍听听“刹车指令”，能让你避开致命的系统性风险。"},
+    "ENTP": {"role": "产品创新顾问 / 业务极客", "desc": "交易规则的调皮破坏者，致力于通过跨界思维寻找下一代交易范式。", "tags": ["模式创新", "辩才无碍", "思维跳变"], "partner": "INTP (逻辑验证节点) / ESTP (市场收割节点)", "advice": "收敛过度的发散思维。选择一个极具潜力的创新点（如某项特定的数据知识产权凭证），深度闭环跟进至最终交付，用结果回击质疑。"},
+    "ENFJ": {"role": "数商成功与生态总监", "desc": "数交所的魅力中心，能通过卓越的共识构建能力，将竞争对手转化为盟友。", "tags": ["关系枢纽", "温情领导力", "利益协调"], "partner": "INFJ (深度研究节点) / ESFJ (落地协同节点)", "advice": "在协调多方利益分配时，大胆引入客观的量化算法模型。不要因为过度追求“生态和谐”而模糊了不可逾越的规则红线。"},
+    "ENFP": {"role": "资源链接大使 / 活动策划", "desc": "充满感染力的生态火苗，让每一场路演都变成数据要素市场的信仰充值。", "tags": ["无限创意", "跨界纽带", "热情驱动"], "partner": "INFJ (导航纠偏节点) / INTJ (架构落地节点)", "advice": "引入严密的甘特图与日程表管理。将你天马行空的生态创意，转化为可追踪的数据漏斗，大幅提升创新的商业核算价值。"},
+    "ISFJ": {"role": "高级行政主管 / 内部运营", "desc": "最坚韧的底层支点，于无声处通过极致细节支撑起整个平台的信誉。", "tags": ["利他主义", "执行力巅峰", "运营专家"], "partner": "ESFJ (对外链接节点) / ISTJ (品控审核节点)", "advice": "在完美支撑中后台高速运转之余，尝试主动提出针对现有冗余流程的优化迭代提案。你的经验极具价值，不要习惯性地隐藏自己的功劳。"},
+    "ESFJ": {"role": "商务关系主管 / 渠道主管", "desc": "超级连接器，擅长经营多维度的商务关系，是前台业务的最强润滑剂。", "tags": ["协作典范", "细节控制", "社会化支撑"], "partner": "ISFJ (精细支持节点) / ESTJ (宏观决策节点)", "advice": "在维护复杂商务生态时，建立更独立的风险评估过滤网，减少对群体情绪与小圈子认同的过度依赖，保持专业的清醒。"},
+    "ISTP": {"role": "危机管理专家 / 技术压舱石", "desc": "数据底座的拆弹专家，只对事实和逻辑负责，是突发故障时的唯一指望。", "tags": ["极简实干", "危机直觉", "技术硬核"], "partner": "ESTP (前线实战节点) / INTP (算法优化节点)", "advice": "尝试将你极度内隐的危机处理经验，沉淀为可视化的风控预案文档。打破沟通断层，不要让整个系统陷入“只有你能修”的技术孤岛。"},
+    "ISFP": {"role": "视觉交互与品牌设计专家", "desc": "赋予枯燥数据以美学价值，致力于提升资产评估与路演的颜值与质感。", "tags": ["审美溢价", "感官叙事", "独立纯粹"], "partner": "ESFP (公众表达节点) / INFP (共情叙事节点)", "advice": "在追求数字展示的美学溢价时，适度增加对核心业务逻辑和底层交易规则的理解，这会让你的作品拥有直击商业痛点的力量。"},
+    "ESTP": {"role": "大客户成交官 / 谈判先锋", "desc": "数据交易的猎手，嗅觉极其灵敏，能捕捉到转瞬即逝的市场红利与空间。", "tags": ["现场感", "博弈高手", "结果收割"], "partner": "ISTP (底层兜底节点) / ENTJ (战略统筹节点)", "advice": "在捕捉市场瞬时套利空间、展现神级操作时，务必将每一步动作主动纳入合规审计的监测雷达之内，为激情装上安全的制动阀。"},
+    "ESFP": {"role": "公共关系与外联大使", "desc": "交易所形象代言人，天生具备将复杂的业务逻辑转化为大众传播话术的天赋。", "tags": ["表现力", "当下主义", "快乐源泉"], "partner": "ISFP (视觉美学节点) / ENFP (创意破局节点)", "advice": "花时间沉下心去啃一啃那些极其枯燥的数据要素政策文件。将你的绝佳表现力建立在扎实的产业根基上，形成无可替代的降维影响力。"}
 }
 
-job_models = {
-    "首席合规官 (CCO)": {"E": -2, "S": 5, "T": 5, "J": 5},
-    "数商关系总监": {"E": 6, "S": 1, "T": -2, "J": 0},
-    "数据产品架构师": {"E": 2, "S": 3, "T": 3, "J": 2},
-    "战略发展专家": {"E": 0, "S": -4, "T": 4, "J": 1},
-    "清算结算总监": {"E": -4, "S": 6, "T": 4, "J": 6}
-}
-
-# --- 4. 状态路由管理 ---
+# --- 5. 状态路由管理 ---
 if 'started' not in st.session_state: st.session_state.started = False
 if 'current_q' not in st.session_state: st.session_state.current_q = 0
 if 'total_scores' not in st.session_state: st.session_state.total_scores = {"E": 0, "S": 0, "T": 0, "J": 0}
@@ -205,38 +178,35 @@ def answer_clicked(val, dim):
     if st.session_state.current_q == 40:
         st.session_state.end_time = time.time()
 
-# --- 5. 渲染引擎 ---
+# --- 6. 渲染引擎 ---
 if not st.session_state.started:
-    # ====== 殿堂级封面页 ======
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<h1 class='hero-title'>上海数据交易所<br>人才资产管理系统</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>SDE ELITE DNA MATRIX v13.0</div>", unsafe_allow_html=True)
+    st.markdown("<h1 class='hero-title'>上海数据交易所<br>人才资产全息引擎</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-subtitle'>▶ SDE MATRIX V16.0_READY</div>", unsafe_allow_html=True)
     
     st.markdown("""
-    <div class='hero-desc'>
-        <b>欢迎接入 SDE 核心神经元网络。</b><br><br>
-        在数据要素化的高速演进中，系统规则与创新博弈并存。本终端基于前沿行为心理学与决策算力模型，旨在深度扫描您的<b>确权思维、合规直觉与生态构建潜能</b>。<br><br>
-        这不是一次普通的问卷，这是您在数字经济浪潮中的<b>个人资产确权</b>。
+    <div style='background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0,243,255,0.4); padding: 25px; border-radius: 16px; font-family: monospace; font-size: 14px; color: #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin-bottom: 40px;'>
+        <span style='color:#94a3b8;'>[SYSTEM]</span> Establishing secure connection to SDE Core...<br>
+        <span style='color:#94a3b8;'>[SYSTEM]</span> Loading Psycho-Metrics Algorithm... <span style='color:#00f3ff;'>[OK]</span><br>
+        <span style='color:#10b981;'>[MODULE]</span> Initializing Synergy & Capability Network...<br><br>
+        <span style='color:#ffffff; font-size: 15px; font-family: sans-serif; line-height: 1.8;'>在数据要素化的高速演进中，单打独斗已成过去式。本终端将深度测算您的<b>底层能力雷达、协同偏好与生态构建潜能</b>。这是一场为赋能而生的数字确权。</span>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<div class='start-btn'>", unsafe_allow_html=True)
-    if st.button("启动核心测算终端 INIT_SYSTEM()", use_container_width=True):
+    if st.button("▶ INIT_ASSESSMENT (启动测算)", type="primary", use_container_width=True):
         start_assessment()
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<div style='text-align:center; color:#475569; font-size:12px; margin-top:50px;'>内部授权使用 · 全程加密传输</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:#475569; font-size:12px; margin-top:50px;'>END-TO-END ENCRYPTED · SDE INTERNAL</div>", unsafe_allow_html=True)
 
 elif st.session_state.current_q < 40:
-    # ====== 高级互动答题页 ======
     q_data = questions[st.session_state.current_q]
     
-    st.markdown("<div style='padding-top:20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
     st.progress((st.session_state.current_q + 1) / 40)
-    st.markdown(f"<div style='text-align:right; font-size:12px; color:#00f3ff; margin-top:-10px; font-family:monospace;'>SCANNING: {st.session_state.current_q + 1} / 40</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:right; font-size:12px; color:#00f3ff; font-family:monospace; margin-top:-10px;'>SCAN_PROGRESS: {st.session_state.current_q + 1} / 40</div>", unsafe_allow_html=True)
     
-    st.markdown(f"<div style='margin: 40px 0 30px 0;'><h3 style='line-height:1.6; color:#ffffff !important; font-weight:600;'>{q_data['q']}</h3></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='margin: 40px 0 35px 0;'><h3 style='line-height:1.6; color:#ffffff !important; font-weight:600;'>{q_data['q']}</h3></div>", unsafe_allow_html=True)
     
     opts = [
         ("完全背离职业直觉", 1),
@@ -246,36 +216,33 @@ elif st.session_state.current_q < 40:
         ("精准复刻我的思维", 5)
     ]
     
-    st.markdown("<div class='question-btn'>", unsafe_allow_html=True)
     for text, val in opts:
-        if st.button(text, key=f"q_{st.session_state.current_q}_{val}"):
+        if st.button(text, type="secondary", key=f"q_{st.session_state.current_q}_{val}"):
             answer_clicked(val, q_data['dim'])
             st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
 else:
-    # ====== 降维打击级结果页 ======
-    trigger_supernova() # 物理引擎爆炸
+    trigger_supernova()
     
     res = st.session_state.total_scores
     mbti = ("E" if res["E"] >= 0 else "I") + ("S" if res["S"] >= 0 else "N") + ("T" if res["T"] >= 0 else "F") + ("J" if res["J"] >= 0 else "P")
     data = mbti_details.get(mbti)
     
-    # 核心确权卡片
+    # 1. 核心结果
     st.markdown(f"""
     <div class="result-card">
-        <div style="font-size:14px; color:#94a3b8; letter-spacing:4px; margin-bottom:15px;">基因序列解析完成</div>
+        <div style="font-size:14px; color:#94a3b8; letter-spacing:4px; margin-bottom:15px; font-family:monospace;">ASSET DECODED SUCCESSFULLY</div>
         <div class="mbti-code">{mbti}</div>
         <div class="mbti-post">【 {data['role']} 】</div>
-        <div class="mbti-desc">{data['desc']}</div>
+        <div style="color:#ffffff; font-size:16px; line-height:1.8; margin-bottom:20px;">{data['desc']}</div>
         <div>
-            {" ".join([f'<span class="cyber-tag">{t}</span>' for t in data['tags']])}
+            {" ".join([f'<span style="background:#1e293b; color:#00f3ff; border:1px solid #00f3ff; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:700; margin:4px; display:inline-block;">{t}</span>' for t in data['tags']])}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 交互式 3D 雷达图
-    st.markdown("<div class='section-header'>🕸️ 核心算力拓扑矩阵 (可触控旋转)</div>", unsafe_allow_html=True)
+    # 2. 动态雷达图
+    st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>🕸️ 算力拓扑矩阵</h4>", unsafe_allow_html=True)
     
     def get_intensity(score): return max(15, min(100, 50 + (score / 20 * 50)))
     val_E, val_I = get_intensity(res["E"]), 100 - get_intensity(res["E"])
@@ -283,76 +250,92 @@ else:
     val_T, val_F = get_intensity(res["T"]), 100 - get_intensity(res["T"])
     val_J, val_P = get_intensity(res["J"]), 100 - get_intensity(res["J"])
     
-    categories = ['外向驱动(E)', '实务落地(S)', '理性风控(T)', '秩序掌控(J)', '内向沉思(I)', '宏观直觉(N)', '感性共鸣(F)', '灵活适配(P)']
+    categories = ['外向(E)', '实务(S)', '理性(T)', '秩序(J)', '内向(I)', '直觉(N)', '感性(F)', '灵活(P)']
     values = [val_E, val_S, val_T, val_J, val_I, val_N, val_F, val_P]
-    values_loop = values + [values[0]]
-    categories_loop = categories + [categories[0]]
-    
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
-        r=values_loop, theta=categories_loop, fill='toself',
-        fillcolor='rgba(0, 243, 255, 0.25)', line=dict(color='#00f3ff', width=3),
-        marker=dict(color='#ffd700', size=8, symbol='diamond')
+        r=values + [values[0]], theta=categories + [categories[0]], fill='toself',
+        fillcolor='rgba(0, 243, 255, 0.2)', line=dict(color='#00f3ff', width=2),
+        marker=dict(color='#ffd700', size=6)
     ))
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, showticklabels=False, range=[0, 100], gridcolor='rgba(0, 243, 255, 0.1)'),
-            angularaxis=dict(tickfont=dict(color='#e2e8f0', size=14), linecolor='rgba(0, 243, 255, 0.3)', gridcolor='rgba(0, 243, 255, 0.2)')
+            radialaxis=dict(visible=False, range=[0, 100]),
+            angularaxis=dict(tickfont=dict(color='#e2e8f0', size=13), linecolor='rgba(0,243,255,0.2)', gridcolor='rgba(0,243,255,0.1)')
         ),
-        showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=40, r=40, t=30, b=30)
+        showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=35, r=35, t=20, b=20), height=300
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    # 潜意识时间追踪
-    st.markdown("<div class='section-header'>⏱️ 潜意识决策引擎分析</div>", unsafe_allow_html=True)
-    time_taken = st.session_state.end_time - st.session_state.start_time
-    if time_taken < 100:
-        s_tag, s_desc, color = "高频量化并发 (极速直觉)", "您的潜意识引擎处于超频状态。擅长在瞬息万变的交易盘口进行瞬时压迫性决策，具有极高的直觉穿透力。", "#ff00ff"
-    elif time_taken < 220:
-        s_tag, s_desc, color = "均衡算力调度 (敏捷研判)", "直觉与逻辑的完美平衡。能在有限信息下快速建立风控模型，是标准数据资产化项目中最稳健的决策节拍。", "#00f3ff"
-    else:
-        s_tag, s_desc, color = "深度逻辑推演 (战略风控)", "决策引擎处于深潜状态。擅长处理极其庞杂的合规变量与底层架构规划，绝不盲从，是顶层制度设计的天然基石。", "#ffd700"
-        
+    # 3. 风险偏好仪表盘
+    st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>🎛️ 风险偏好评估</h4>", unsafe_allow_html=True)
+    risk_score = 50 + (res["P"] * 1.5) - (res["S"] * 1.5) 
+    risk_score = max(5, min(95, risk_score))
+    
+    if risk_score < 35: r_tag, r_color, r_desc = "绝对合规防御", "#4ade80", "极其厌恶风险，对合规红线有天然敬畏，适合把守风控结算的核心命脉。"
+    elif risk_score < 65: r_tag, r_color, r_desc = "动态套利平衡", "#ffd700", "能够在政策夹缝中精准控制风险敞口，适合主导数据产品架构与业务统筹。"
+    else: r_tag, r_color, r_desc = "前沿模式开拓", "#f43f5e", "极度渴望打破旧有规则，拥有极强扩张力，能快速抢占生态阵地。"
+    
+    fig_gauge = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = risk_score,
+        number = {'suffix': "%", 'font': {'color': r_color, 'size': 35}},
+        title = {'text': f"<span style='color:{r_color}; font-size:16px;'>{r_tag}</span>", 'font': {'color': '#94a3b8'}},
+        gauge = {
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#334155"},
+            'bar': {'color': r_color},
+            'bgcolor': "rgba(255,255,255,0.05)",
+            'steps': [
+                {'range': [0, 35], 'color': "rgba(74, 222, 128, 0.1)"},
+                {'range': [35, 65], 'color': "rgba(255, 215, 0, 0.1)"},
+                {'range': [65, 100], 'color': "rgba(244, 63, 94, 0.1)"}],
+        }
+    ))
+    fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "#94a3b8"}, height=250, margin=dict(l=20, r=20, t=30, b=0))
+    st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+    st.markdown(f"<div style='color:#e2e8f0; font-size:13px; text-align:center; margin-top:-20px; margin-bottom:20px;'>{r_desc}</div>", unsafe_allow_html=True)
+
+    # 4. 替换模块：生态协同与成长赋能 (替换掉之前的暗黑预警)
+    st.markdown("<h4 style='color:#10b981; border-left:4px solid #10b981; padding-left:10px;'>💡 进阶协同指南</h4>", unsafe_allow_html=True)
     st.markdown(f"""
-    <div style='background:rgba(15, 23, 42, 0.8); border-left: 4px solid {color}; padding:20px; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,0.3);'>
-        <div style='color:{color}; font-size:18px; font-weight:bold; margin-bottom:10px;'>{s_tag}</div>
-        <div style='color:#e2e8f0; font-size:14px; line-height:1.6;'>测算耗时：{int(time_taken)} 秒<br><br>{s_desc}</div>
+    <div class='synergy-box'>
+        <div class='synergy-title'>[ 最佳生态协同节点 ]</div>
+        <div style='margin-bottom:15px; color:#ffffff; font-weight:bold;'>{data['partner']}</div>
+        <div class='synergy-title'>[ 系统演算提升指令 ]</div>
+        <div>{data['advice']}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 链上确权名片 (极其装逼)
-    st.markdown("<div class='section-header'>⛓️ 资产确权社交凭证</div>", unsafe_allow_html=True)
-    hash_code = hex(hash(mbti + str(time_taken) + str(res["E"])))[-10:].upper()
-    share_card = f"""【SDE 全息人才资产确权凭证】
+    # 5. 个人职场名片
+    time_taken = st.session_state.end_time - st.session_state.start_time
+    st.markdown("<h4 style='color:#00f3ff; border-left:4px solid #00f3ff; padding-left:10px;'>⛓️ 资产确权凭证</h4>", unsafe_allow_html=True)
+    hash_code = hex(hash(mbti + str(time_taken) + str(res["S"])))[-10:].upper()
+    share_card = f"""【SDE 人才资产确权凭证】
 ======================
-◈ 基因序列：{mbti}
-◈ 系统职衔：{data['role']}
-◈ 核心算力：{' · '.join(data['tags'])}
-◈ 决策频段：{s_tag.split(' ')[0]}
+◈ 序列：{mbti} ({data['role'].split(' / ')[0]})
+◈ 算力：{' · '.join(data['tags'])}
+◈ 阵地：{r_tag}
 ======================
-确权哈希：0x{hash_code}E9
-（来自SDE内部测算终端）"""
-    st.code(share_card, language="text")
-    st.caption("☝️ 长按代码框复制，发送至微信宣告你的数字主权。")
+哈希：0x{hash_code}E9
+（解码数据价值，定义要素未来）"""
+    st.markdown(f"<div style='background:#111827; padding:15px; border-radius:8px; font-family:monospace; font-size:13px; color:#ffffff; border:1px solid #334155; white-space:pre-wrap;'>{share_card}</div>", unsafe_allow_html=True)
+    st.caption("☝️长按文本框区域发至微信，构建你的生态链接。")
 
     # 底部重启
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<div class='start-btn'>", unsafe_allow_html=True)
-    if st.button("重启系统 RESET_TERMINAL()", use_container_width=True):
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("重启核心引擎 RESET()", type="primary", use_container_width=True):
         st.session_state.started = False
         st.session_state.current_q = 0
         st.session_state.total_scores = {"E": 0, "S": 0, "T": 0, "J": 0}
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 7. 专属高亮版权 ---
 st.markdown("""
-    <div style='text-align:center; margin-top:60px; margin-bottom:20px; font-family:monospace;'>
-        <div style='color:#00f3ff; font-size:11px; opacity:0.6; letter-spacing:2px; margin-bottom:8px;'>
+    <div style='text-align:center; margin-top:50px; margin-bottom:20px; font-family:monospace;'>
+        <div style='color:#00f3ff; font-size:11px; opacity:0.5; letter-spacing:2px; margin-bottom:5px;'>
             POWERED BY DATA ELEMENT ENGINE
         </div>
-        <div style='color:#ffd700; font-size:13px; font-weight:900; letter-spacing:3px; text-shadow:0 0 15px rgba(255,215,0,0.8);'>
+        <div style='color:#ffd700; font-size:12px; font-weight:900; letter-spacing:3px; text-shadow:0 0 15px rgba(255,215,0,0.6);'>
             © 版权归属无名逆流所有
         </div>
     </div>
