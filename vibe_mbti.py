@@ -1,321 +1,287 @@
 import streamlit as st
-import time
+import pandas as pd
 import random
+import time
+import plotly.graph_objects as go
 
-# --- 1. 页面基础配置 ---
-st.set_page_config(page_title="SDE 数据要素菁英图谱 | 灵魂底色测试", page_icon="📈", layout="centered")
+# --- 1. 页面与官方主题强制配置 ---
+st.set_page_config(
+    page_title="SDE 数据要素菁英图谱",
+    page_icon="🌌",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# --- 2. 注入 SDE 专属商务科技风 CSS & 666 特效动画 ---
+# --- 2. 注入“光污染”赛博朋克级 UI 样式 & 烟花特效 ---
 st.markdown("""
 <style>
-    .stApp { background-color: #f4f7f6; }
-    .stProgress > div > div > div > div { background-image: linear-gradient(to right, #1e3c72 0%, #2a5298 100%); }
+    /* 全局赛博深空背景 */
+    [data-testid="stAppViewContainer"] { 
+        background-color: #0b101e !important; 
+        background-image: radial-gradient(circle at 50% 0%, #152336 0%, #0b101e 70%) !important;
+    }
     
-    /* 选项按钮科技感升级 */
+    /* 强制文本颜色 */
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp p, .stApp span, .stApp div {
+        color: #e2e8f0;
+    }
+    
+    /* 光污染标题 */
+    .stApp h1 { 
+        color: #00f3ff !important; 
+        text-shadow: 0 0 10px rgba(0,243,255,0.6), 0 0 20px rgba(0,243,255,0.4); 
+        font-weight: 900 !important; text-align: center; margin-bottom: 5px; letter-spacing: 2px;
+    }
+    
+    /* 进度条霓虹光效 */
+    .stProgress > div > div > div > div {
+        background-image: linear-gradient(90deg, #00f3ff, #ff00ff) !important;
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.8) !important;
+    }
+
+    /* 选项按钮：毛玻璃 + 霓虹边框 */
     div.stButton > button {
-        height: auto !important; min-height: 110px !important;
-        font-size: 16px !important; border-radius: 12px !important;
-        border: 2px solid #e2e8f0 !important; background-color: white !important;
-        color: #2d3748 !important; transition: all 0.3s ease !important;
-        white-space: normal !important; padding: 15px 20px !important;
-        text-align: left !important; line-height: 1.5 !important;
+        width: 100% !important; min-height: 65px !important; border-radius: 12px !important;
+        background: rgba(20, 30, 48, 0.6) !important;
+        border: 1px solid rgba(0, 243, 255, 0.3) !important;
+        color: #e2e8f0 !important; font-size: 15px !important; text-align: left !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.05) !important;
+        white-space: normal !important; padding: 12px 20px !important; line-height: 1.6 !important;
     }
-    div.stButton > button:hover {
-        border-color: #2a5298 !important; background-color: #f8fafc !important;
-        box-shadow: 0 8px 16px rgba(42, 82, 152, 0.15) !important;
-        transform: translateY(-2px) !important;
+    div.stButton > button:hover { 
+        border-color: #00f3ff !important; background: rgba(0, 243, 255, 0.1) !important;
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.4) !important;
+        color: #ffffff !important; transform: translateY(-2px);
     }
     
-    /* 结果卡片 - 数据蓝金风格 */
+    /* 结果大卡片：全息终端质感 */
     .result-card {
-        padding: 40px 20px; border-radius: 16px; 
-        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); 
-        text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-        color: white; margin-bottom: 25px; border-bottom: 4px solid #d4af37;
-        animation: fadeIn 1s ease-in-out;
+        padding: 35px 20px; border-radius: 24px; 
+        background: linear-gradient(145deg, rgba(20, 30, 48, 0.8), rgba(11, 16, 30, 0.9));
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        text-align: center; 
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+        margin-bottom: 25px; position: relative; overflow: hidden;
     }
-    .mbti-text { font-size: 80px; font-weight: 900; margin: 5px 0; color: #ffffff; letter-spacing: 4px; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
-    .mbti-role { font-size: 26px; font-weight: bold; margin-bottom: 15px; color: #d4af37; }
-    .mbti-desc { font-size: 16px; opacity: 0.9; line-height: 1.6; padding: 0 20px; color: #e2e8f0;}
+    .mbti-code { font-size: 78px; font-weight: 900; color: #ffd700 !important; line-height: 1; letter-spacing: 2px; text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); margin: 10px 0;}
+    .mbti-post { font-size: 24px; font-weight: bold; color: #00f3ff !important; margin: 12px 0; text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);}
     
-    /* 建议卡片 */
-    .advice-box { 
-        padding: 25px; background-color: white; border-radius: 12px; 
-        border-left: 6px solid #2a5298; margin-top: 15px; color: #334155; 
-        line-height: 1.8; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    /* 666 满屏动效 */
-    .effect-666 { 
-        position: fixed; font-size: 40px; font-weight: 900; 
-        background: -webkit-linear-gradient(45deg, #ff007f, #ff8c00);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        text-shadow: 2px 2px 10px rgba(255,0,127,0.3);
-        z-index: 9999; animation: floatUp 3s ease-out forwards; pointer-events: none;
-    }
-    @keyframes floatUp { 
-        0% { bottom: -10%; opacity: 1; transform: translateX(0) scale(0.5) rotate(0deg); } 
-        100% { bottom: 110%; opacity: 0; transform: translateX(100px) scale(1.5) rotate(20deg); } 
-    }
-    
-    /* 版权区 */
-    .footer { text-align: center; color: #94a3b8; padding: 50px 0 20px 0; font-size: 13px; letter-spacing: 1px; }
+    /* 解析板块与标签 */
+    .section-header { font-size: 18px; font-weight: 700; color: #00f3ff !important; border-left: 5px solid #ff00ff; padding-left: 12px; margin: 25px 0 15px 0; text-shadow: 0 0 8px rgba(0,243,255,0.4); }
+    .expert-box { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px rgba(0,0,0,0.5); margin-bottom: 15px; }
+    .cyber-tag { background: rgba(0, 243, 255, 0.1); color: #00f3ff !important; border: 1px solid #00f3ff; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; margin: 3px; display: inline-block; text-shadow: 0 0 5px rgba(0,243,255,0.5); }
+
+    /* 烟花特效 */
+    .firework-666 { position: fixed; font-weight: 900; z-index: 9999; pointer-events: none; color: transparent; -webkit-text-stroke: 1px #00f3ff; text-shadow: 0 0 20px #00f3ff, 0 0 40px #ff00ff; animation: explode 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;}
+    @keyframes explode { 0% { bottom: 20%; left: 50%; transform: scale(0.1) rotate(0deg); opacity: 1; } 100% { bottom: var(--endY); left: var(--endX); transform: scale(var(--endScale)) rotate(var(--endRot)); opacity: 0; filter: hue-rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
 
-# 触发 666 特效的函数
-def trigger_666_effect():
+def trigger_cyber_fireworks():
     html_str = ""
-    for _ in range(40): # 生成40个 666
-        left = random.randint(5, 95)
-        delay = random.uniform(0, 1.5)
-        size = random.randint(30, 60)
-        html_str += f'<div class="effect-666" style="left: {left}%; animation-delay: {delay}s; font-size: {size}px;">666</div>'
+    for _ in range(60): 
+        endX, endY = f"{random.randint(5, 95)}%", f"{random.randint(60, 110)}%"
+        scale, rot, delay = random.uniform(1.0, 3.5), random.randint(-180, 180), random.uniform(0, 1.2)
+        html_str += f'<div class="firework-666" style="--endX:{endX}; --endY:{endY}; --endScale:{scale}; --endRot:{rot}deg; animation-delay: {delay}s; font-size: 24px;">666</div>'
     st.markdown(html_str, unsafe_allow_html=True)
 
-# --- 3. SDE 专属硬核题库 (32题) ---
+# --- 3. 40 道专家题库 (精简呈现，执行全量逻辑) ---
 questions = [
-    # E vs I (精力分配与沟通)
-    {"q": "1. 参加全球数据生态大会，中场休息时你通常会：", "A": ("主动交换名片，和各大数商、第三方机构热聊，越聊越兴奋", "E"), "B": ("找个清静的角落回回工作微信，或者只和同行的熟人交流", "I")},
-    {"q": "2. 发现数字资产交易系统的风控规则存在严重缺陷时，你倾向于：", "A": ("立刻拉一个多部门的紧急电话会议或线下碰头会，当面把事情对齐", "E"), "B": ("先自己梳理好缺陷逻辑和修改建议，发一封详尽的邮件给大家", "I")},
-    {"q": "3. 结束了一周高强度的数据产品合规审查后，周末你更想：", "A": ("约朋友打球、聚餐，在热闹的人间烟火中释放压力", "E"), "B": ("关掉工作手机，一个人在家看书或看电影，享受绝对的独处", "I")},
-    {"q": "4. 推动某项创新数据交易业务落地时，遇到跨部门阻力，你会：", "A": ("直接走到对方工位上，通过高频、直接的语言沟通解决分歧", "E"), "B": ("通过文字留言、批注或正式的工作群，深思熟虑后再回复对方的质疑", "I")},
-    {"q": "5. 对于“头脑风暴”式的业务研讨会，你的感受是：", "A": ("非常喜欢，别人的发言总能激发我源源不断的灵感", "E"), "B": ("有点耗能，我更喜欢在会前自己先思考出一个完整的框架", "I")},
-    {"q": "6. 当市数据局的领导来所里视察调研时，你通常：", "A": ("自告奋勇担任讲解或汇报，在众人面前侃侃而谈", "E"), "B": ("做好幕后的材料支撑和逻辑梳理，除非被点名，否则尽量不抢风头", "I")},
-    {"q": "7. 你平时在所内 OA 系统或工作群里的活跃度：", "A": ("极高，喜欢发声，经常抛出新话题或参与热烈讨论", "E"), "B": ("潜水为主，只在需要自己明确表态或处理具体事务时才发言", "I")},
-    {"q": "8. 你更喜欢哪种办公环境：", "A": ("开放式、充满交流声、随时可以拉人讨论的热闹氛围", "E"), "B": ("安静、有隔断、没人打扰，能让我进入深度心流状态", "I")},
-
-    # S vs N (信息获取与认知维度)
-    {"q": "9. 在起草一份向市数据局争取支持的政策专报时，你最看重：", "A": ("专报中的数据是否准确，法律条文引用是否无误，诉求是否具体可执行", "S"), "B": ("专报是否拔高到了全市乃至国家的数据要素战略高度，立意够不够深远", "N")},
-    {"q": "10. 进行“数据产权与数据知识产权”的对比研究时，你的切入点是：", "A": ("对比现行法律条文的具体字眼，分析两者的确权流程和实操案例", "S"), "B": ("探讨这两种权利在未来数字经济底层架构中的哲学意义和演变趋势", "N")},
-    {"q": "11. 评估一个新上架的数据产品时，你第一眼关注：", "A": ("数据来源是否合法，字段说明是否清晰，API接口是否稳定", "S"), "B": ("这个数据产品能组合出什么新玩法，它背后的商业模式有多大想象力", "N")},
-    {"q": "12. 你更钦佩哪种交易所的专家：", "A": ("极其严谨务实，能把极其复杂的合同管理规范逐条落地，不留死角", "S"), "B": ("眼界极度开阔，满脑子都是颠覆性的数据流通新模式和新生态", "N")},
-    {"q": "13. 当国家出台了最新的“数据二十条”相关指导意见后，你会：", "A": ("仔细研读细则，对比旧规，圈出对当前业务有直接影响的条款", "S"), "B": ("思考政策背后的顶层设计逻辑，预判未来三年的行业风口在哪里", "N")},
-    {"q": "14. 会议上，某位技术总监在描述未来的数据流通架构，你容易对什么感到不耐烦：", "A": ("讲了半天概念和宏大愿景，却不告诉我下周一到底要开发什么具体功能", "S"), "B": ("陷入了无休止的底层代码细节和微小技术参数里，看不到全局大图", "N")},
-    {"q": "15. 你在解决一个风控合规的“疑难杂症”时，通常依赖：", "A": ("过往处理类似违规事件的积累经验和现有的制度汇编", "S"), "B": ("敏锐的直觉，尝试跳出既有框架，用全新的视角寻找破局点", "N")},
-    {"q": "16. 描述上海数据交易所的愿景，你更喜欢哪种表达：", "A": ("成为日均交易额破百亿、挂牌产品超十万、风控制度最完善的机构", "S"), "B": ("成为全球数据要素流通的神经中枢，重塑数字时代的价值分配体系", "N")},
-
-    # T vs F (决策逻辑与价值观)
-    {"q": "17. 业务部门为了冲业绩，想上架一款处于合规灰色地带的产品，你作为把关人会：", "A": ("不讲情面，严格按照《合同管理规范》和风控底线，坚决一票否决", "T"), "B": ("理解业务团队的压力，尽量帮他们寻找合规的替代方案，婉转驳回", "F")},
-    {"q": "18. 在团队内部进行项目复盘时，你的侧重点是：", "A": ("剖析流程哪里出了漏洞，责任在谁，如何用制度避免下次再犯", "T"), "B": ("关注大家在项目中的情绪状态，肯定每个人的辛勤付出，维护团队和谐", "F")},
-    {"q": "19. 你发现了一名优秀的同事在操作数字资产交易系统时出现了违规，你会：", "A": ("公事公办，直接按流程上报并触发风控警报，维护系统的绝对公正", "T"), "B": ("先私下找他沟通，了解是否事出有因，在权限范围内尽量降低对他的负面影响", "F")},
-    {"q": "20. 你认为构建良好“数据生态”的核心基石应该是：", "A": ("冰冷但严密的智能合约、确权规则和惩戒机制", "T"), "B": ("数商之间、政企之间的互信、合作共赢的理念和共识", "F")},
-    {"q": "21. 如果要给高管汇报一份制度改革方案，你希望得到的评价是：", "A": ("“逻辑极其严密，数据支撑强悍，无懈可击。”", "T"), "B": ("“非常人性化，充分考虑了各方诉求，极具人情味。”", "F")},
-    {"q": "22. 当下属因为工作失误向你道歉并感到自责时，你脱口而出的是：", "A": ("“别纠结了，赶紧说说你打算怎么补救，下一步的 Action 方案是什么？”", "T"), "B": ("“没关系，谁都会犯错，你这几天压力太大了，先调整好情绪最重要。”", "F")},
-    {"q": "23. 你在探讨数据资产化入表时，更关注：", "A": ("财务审计准则、估值模型和法律权属的清晰界定", "T"), "B": ("数据资产化对企业员工、对社会带来的福祉和深远伦理影响", "F")},
-    {"q": "24. 你认为在职场中最难能可贵的品质是：", "A": ("保持绝对的理智、客观，不被任何情绪裹挟", "T"), "B": ("保持极高的同理心、善良，始终带有人文关怀", "F")},
-
-    # J vs P (工作习惯与生活方式)
-    {"q": "25. 负责统筹起草《数据交易所合同管理规范》这样的系统性工程时，你：", "A": ("先拉一个精确到天的甘特图，分配好各部门节点，严格按时间表推进", "J"), "B": ("先写个大致框架，在征求意见的过程中边走边看，随时准备大修大改", "P")},
-    {"q": "26. 明天要给市局领导做一个关于风控规则缺陷的汇报 PPT，你现在的状态是：", "A": ("前天就已经定稿并演练了三遍，现在心里非常踏实", "J"), "B": ("今晚才是灵感爆发的高峰期，不到最后一刻绝不定稿，享受这种极限拉扯", "P")},
-    {"q": "27. 你电脑里关于“数据产权”的研究资料和文件夹通常是：", "A": ("层级分明，按年份、政策级别、作者分类得清清楚楚", "J"), "B": ("全部堆在桌面或一个大文件夹里，靠搜索功能或者惊人的记忆力找东西", "P")},
-    {"q": "28. 正在推进数据资产凭证发放业务，突然监管政策风向变了，你：", "A": ("感到非常难受和焦虑，因为这意味着我辛苦做的计划全部作废", "J"), "B": ("觉得反而兴奋，迅速抛弃旧方案，顺应新风向寻找新的业务突破口", "P")},
-    {"q": "29. 下班后离开公司，你的常态是：", "A": ("办公桌收拾得干干净净，明天的待办清单已经列好", "J"), "B": ("桌面上还摊着没看完的文件，随时准备明天无缝衔接继续干", "P")},
-    {"q": "30. 对于“制定个人年度发展规划”，你的态度是：", "A": ("非常必要，我会设定清晰的 KPI，比如考下某个高级合规证书", "J"), "B": ("太束缚了，我更喜欢顺其自然，抓住随时出现的未知机遇", "P")},
-    {"q": "31. 在休假去三亚旅行时，如果遇到突发的大雨打乱了行程，你：", "A": ("立刻启动 Plan B，预定备用的室内活动，确保一天不被浪费", "J"), "B": ("干脆在酒店大堂喝杯咖啡听听雨，随遇而安，这才是旅行的意义", "P")},
-    {"q": "32. 在人生的重大选择上（比如是否跳槽来数据交易所），你倾向于：", "A": ("尽早做出决断，一锤定音，然后坚定地朝前走绝不回头", "J"), "B": ("收集极其庞杂的信息，反复权衡，不到最后一刻很难下定决心", "P")}
+    {"q": "面对数商生态中各方利益的博弈冲突，我倾向于亲自到现场进行高频次的调解与游说。", "dim": "E"},
+    {"q": "代表交易所进行政策咨询时，我享受通过专业表达输出机构影响力的过程。", "dim": "E"},
+    {"q": "相比审阅合同，我更擅长通过“头脑风暴”快速萃取业务协同方案。", "dim": "E"},
+    {"q": "我习惯于维护庞大的人脉网络，并定期主动激活其中的潜在业务价值。", "dim": "E"},
+    {"q": "处理突发声誉风险时，我倾向于迅速发声而非长时间闭门研判。", "dim": "E"},
+    {"q": "在大型业务路演中，我发现自己能激发出比独处时更多的创新灵感。", "dim": "E"},
+    {"q": "新政策出台后，我会第一时间在专业群组发起讨论而非独自研读。", "dim": "E"},
+    {"q": "面对跨部门协作壁垒，我倾向于用非正式的社交手段来打破僵局。", "dim": "E"},
+    {"q": "我能适应高强度的商务谈判频率，并从中获得极大的成就感。", "dim": "E"},
+    {"q": "在推行规则时，我坚信“现场宣贯”的效果远优于“文件下发”。", "dim": "E"},
+    {"q": "即使是宏大的项目，我也会先死磕会计科目调整的每一个底层逻辑。", "dim": "S"},
+    {"q": "我更信任成交曲线和合规存证等量化数据，而非定性的趋势预判。", "dim": "S"},
+    {"q": "面对新名词（如隐私计算），我首先关注其具体的技术落地路径。", "dim": "S"},
+    {"q": "我认为交易所的核心任务是把确权、存证、结算动作做到零差错。", "dim": "S"},
+    {"q": "撰写报告时，我习惯于堆叠详实的事实证据，而非过多的战略隐喻。", "dim": "S"},
+    {"q": "相比于预测十年规划，我更关心下个季度的结算效率如何提升。", "dim": "S"},
+    {"q": "成熟的交易所应当像精密机器，规则的稳定性优于频繁的创新。", "dim": "S"},
+    {"q": "在法律文本面前，我总能敏锐捕捉到导致实操失败的措辞隐患。", "dim": "S"},
+    {"q": "我偏好有明确时间节点的阶段性产出，即使只是流程的微小改良。", "dim": "S"},
+    {"q": "对于审核上架，我倾向于依赖标准清单而非主观的价值评估。", "dim": "S"},
+    {"q": "即使影响交易额，我也会关停任何存在合规瑕疵的高收益项目。", "dim": "T"},
+    {"q": "评估数商信用时，我只看客观履约数据，不看行业内的情感口碑。", "dim": "T"},
+    {"q": "交易所职责应当职责分明、冷酷高效，过度人情味会损伤公平。", "dim": "T"},
+    {"q": "面对跨部门争议，我倾向于寻找逻辑最优解，而非寻求情感平衡。", "dim": "T"},
+    {"q": "当下属工作出现失误，我会直接指出逻辑谬误，认为这是最高效的。", "dim": "T"},
+    {"q": "我倾向于通过智能合约等技术手段替代人工审核，确保绝对公平。", "dim": "T"},
+    {"q": "在收益分配中，我坚信“贡献度量化”应绝对优于“生态扶持”。", "dim": "T"},
+    {"q": "面对不合理的业务要求，我会列举逻辑障碍回绝，而非婉转迁就。", "dim": "T"},
+    {"q": "合规官应当像法官一样理智，不被外界的业务热潮所干扰。", "dim": "T"},
+    {"q": "处理投诉时，我关注问题的本质技术原因，而非投诉者的情绪。", "dim": "T"},
+    {"q": "我会为重大项目建立多级倒排计划，并极其反感进度失去控制。", "dim": "J"},
+    {"q": "我的云盘文件夹拥有严密的分类逻辑，索引缺失会让我感到不适。", "dim": "J"},
+    {"q": "如果没有形成明确的决议和责任人，我会认为这场会议是失败的。", "dim": "J"},
+    {"q": "我倾向于在项目初期锁定所有需求，对中途变卦持排斥态度。", "dim": "J"},
+    {"q": "即便再忙碌，我也坚持每日进行工作复盘并更新待办任务清单。", "dim": "J"},
+    {"q": "交易所运营应当“重制度设计、轻即兴发挥”，哪怕牺牲反应速度。", "dim": "J"},
+    {"q": "我几乎从不拖延，因为待办清单的存在会带给我无形的心理压力。", "dim": "J"},
+    {"q": "我更喜欢节奏稳定、可预测的环境，而非每天处理突发任务。", "dim": "J"},
+    {"q": "为了确保最终交付质量，我会提前预留出至少20%的缓冲时间。", "dim": "J"},
+    {"q": "面对多线任务，我必须先梳理优先级并获得确认，才能安心执行。", "dim": "J"}
 ]
 
-# --- 4. 极致深度的 SDE 专属解析库 ---
-mbti_profiles = {
-    "INTJ": {
-        "role": "架构师 | 顶层规则的缔造者",
-        "desc": "极度理性，洞察本质。别人看到的是交易数据，你看到的是底层权属与制度的宏大蓝图。",
-        "career": "你是天生的高阶智囊。极度适合牵头“数据产权与数据知识产权的对比”这类需要极强思辨能力的研究课题。在风控合规部，你能一眼看穿现有数字资产交易系统规则的逻辑硬伤，并为交易所设计出具有前瞻性和不可击破的底层合规护城河。",
-        "life": "长期高强度的脑力激荡会让你感到疲惫。建议设定绝对的“离线时间”，远离政策文件和微信群。去接触一些纯物理层面的爱好，比如高强度的器械训练，让大脑强制关机。",
-        "love": "在爱情中你极其挑剔，智力上的势均力敌是你唯一的门槛。当你在交易所为了市局的政策专报熬夜时，你不需要伴侣的嘘寒问暖，只需要对方能懂你这份事业的战略价值。一旦认定，你的爱深沉且绝对忠诚。"
-    },
-    "INTP": {
-        "role": "逻辑学家 | 系统漏洞的清道夫",
-        "desc": "极客精神，剖析一切。剥开数据流通的表象，你是那个能重构整个风控逻辑代码的天才。",
-        "career": "你具备无与伦比的分析能力。极具适合钻研“数字资产交易系统风控规则”中的隐蔽缺陷。你不喜欢被繁琐的行政流程（如催促进度）束缚，只要给你足够的自由和权限，你能精准定位系统漏洞，并给出令人拍案叫绝的重构方案。",
-        "life": "你容易在抽象的思考中忽略现实生活。记得按时吃饭，保持环境整洁。偶尔跳出你的信息茧房，去大自然中感受一下没有逻辑可言的美。",
-        "love": "感情对你来说是一个难以用公式计算的难题。你可能会显得有些迟钝，但极其真诚。你理想的伴侣是能够包容你偶尔的“失联”，并能与你在数据哲学甚至宇宙奥秘上侃侃而谈的灵魂伴侣。"
-    },
-    "ISTJ": {
-        "role": "物流师 | 合规底线的铁壁垒",
-        "desc": "严谨务实，不怒自威。在狂飙突进的数据产业里，你是交易所不可逾越的定海神针。",
-        "career": "你是风控与合规部门的核心骨干。极其适合主导“合同管理规范”的起草、监督与执行。你不相信大饼，只相信制度和证据。任何想要打擦边球的违规交易，都会在你的放大镜下无所遁形。你的存在，是交易所长期稳健运营的最大底气。",
-        "life": "秩序感是你能量的来源。你习惯将生活也像合同管理一样打理得井井有条。但偶尔的失控未必是坏事，试着在周末来一场没有攻略的自驾游，给紧绷的神经松松绑。",
-        "love": "你不擅长甜言蜜语，但极其靠谱。你认为爱情的本质就是契约与责任。你会在伴侣生病时准备好所有的药，在生活的方方面面提供极其稳定、坚不可摧的后勤保障。"
-    },
-    "ESTJ": {
-        "role": "总经理 | 业务推进的重装机甲",
-        "desc": "铁腕执行，结果导向。没有你落不了地的政策，没有你推进不下去的规范。",
-        "career": "你是天生的统帅。在向市局汇报政策专报、或者在所内跨部门推行严苛的“风控合规规范”时，你能顶住所有的阻力，强势破局。你擅长将复杂的战略目标拆解为可执行的 KPI，是让数据要素真正流通起来的实干家。",
-        "life": "你习惯了掌控一切，容易在生活中也表现出“领导做派”。学会放下身段，享受生活中的不完美。陪伴家人时，少讲点大道理，多提供一点情绪价值。",
-        "love": "你对家庭极具责任感，但也容易变得强势。试着在伴侣面前卸下在交易所里的铠甲，学会倾听而不是直接下达指令。高质量的爱不仅是提供物质，更是精神上的平等交流。"
-    },
-    "INFJ": {
-        "role": "提倡者 | 数据生态的先知",
-        "desc": "洞察人心，高瞻远瞩。你关注的不仅仅是一笔数据交易，而是它背后的社会价值。",
-        "career": "在交易所，你不仅是一个规则的制定者，更像是一个生态的布道师。你非常适合思考数据资产化如何惠及实体经济、如何兼顾伦理与发展。在处理跨部门风控摩擦时，你能敏锐察觉到对方的核心诉求，用极高的情商化解危机。",
-        "life": "你有着极强的共情力，但也容易因为吸收太多负能量而内耗。必须学会“课题分离”，不要把工作中的合规压力带入个人情绪。寻找一个属于自己的心灵避难所，比如冥想或写作。",
-        "love": "你渴望极度深邃、直击灵魂的爱恋。你极具浪漫情怀，比如你可能会为了纪念你们的爱情，专门为伴侣写一首歌、制作一份独一无二的礼物。你的爱温柔而磅礴，但也需要对方能真正读懂你的内心。"
-    },
-    "INFP": {
-        "role": "调停者 | 价值理念的守望者",
-        "desc": "内心纯粹，坚守理想。在冰冷的数字资产背后，你始终在寻找人性和温度。",
-        "career": "对于枯燥的《合同管理规范》条款你可能会感到窒息，但如果是起草一份传递交易所愿景和核心价值观的报告，你会文思泉涌。你适合从事生态培育、品牌建设以及具有社会责任属性的数据流通研究。你需要的是工作的“意义”。",
-        "life": "你的内心世界极其丰富，但也容易因为现实的不完美而感到失落。接受“水至清则无鱼”的现实，在合规与业务的灰度中寻找平衡。用艺术、音乐或文学来安置你无处安放的才华。",
-        "love": "你是天生的浪漫主义者。你的爱情往往伴随着诗意和极强的仪式感。例如为爱人创作一首专属的情歌，或者在平凡的日子里制造巨大的惊喜。你需要一个能懂你脆弱、并能将你温柔托底的爱人。"
-    },
-    "ENTJ": {
-        "role": "指挥官 | 数据产业的破壁人",
-        "desc": "气场全开，雷厉风行。风浪越大你越兴奋，生来就是为了征服复杂的数据商业博弈。",
-        "career": "极度适合担任交易所的高管或核心攻坚团队负责人。在向市局争取重磅政策支持，或是主导顶层数据产权制度改革时，你极具战略眼光和压迫感，能迅速整合资源，带领团队杀出一条血路。",
-        "life": "“停不下来”是你的常态。即使在周末，你的大脑依然在跑业务模型。请强迫自己休息，因为顶级的战略决策需要清醒的头脑。去尝试壁球或赛车等刺激的运动，释放你的荷尔蒙。",
-        "love": "在爱情中你也追求“强强联合”。你需要伴侣是能够在事业上给你启发、在智力上与你势均力敌的战友。记得在家里关掉你的“指挥官模式”，多一点柔软和妥协。"
-    },
-    "ENTP": {
-        "role": "辩论家 | 传统规则的颠覆者",
-        "desc": "脑洞极大，不破不立。你最讨厌的一句话就是“以前一直都是这么做的”。",
-        "career": "你是现有数字资产交易风控规则的天然挑战者。你总能从不可思议的角度找到制度的漏洞，并提出极具颠覆性的重构思路。极其适合新业务的拓荒、数据知识产权的前沿探索。只要不让你干重复性的审批工作，你就是无敌的。",
-        "life": "你的兴趣像阵风，什么都想学，什么都想试。不要因为三分钟热度而自责，广泛涉猎正是你灵感的源泉。结交不同领域的朋友，跨界的碰撞会让你兴奋不已。",
-        "love": "爱情对你来说是一场不能无聊的游戏。你需要一个能接住你的各种烂梗、愿意陪你一起疯、且极度包容的伴侣。你害怕被束缚，因此高质量的独立空间对你们的关系至关重要。"
-    },
-    "ENFJ": {
-        "role": "主人公 | 交易所的政委",
-        "desc": "极具魅力，共情力爆表。你不是在管理团队，你是在点燃他们。",
-        "career": "你是跨部门协同和外部对接的绝佳人选。无论是向市局汇报政策进展，还是在所内调解风控与业务部门的矛盾，你都能用极强的感染力让各方达成共识。你善于激发下属的潜能，是团队绝对的主心骨。",
-        "life": "你太习惯于照顾所有人的情绪，导致经常忽略了自己。请记住：在拯救世界之前，先照顾好自己。学会在必要的时候说“不”，你的价值不需要建立在无限度的付出上。",
-        "love": "你是完美的伴侣，总是能敏锐察觉到爱人的需求并给予极其温暖的回应。但你也同样渴望被热烈地爱着、被高度地认可。找一个懂得感恩、愿意用实际行动回馈你的爱的人。"
-    },
-    "ENFP": {
-        "role": "竞选者 | 创新生态的火种",
-        "desc": "热情洋溢，创意无限。哪里有你，哪里就有数据生态的勃勃生机。",
-        "career": "你极度不适合被锁在办公室里死磕干瘪的合同规范。你应该去一线，去开拓数商生态、去策划数字资产的发行活动、去传播交易所的理念。你的热情极具感染力，能轻松撬动海量的外部资源。",
-        "life": "你的生活充满变数和惊喜，但也容易显得杂乱无章。你急需一个像 ISTJ 或 INTJ 这样的靠谱朋友，在关键时刻帮你看好钱包、理清思路，把你的天马行空落地为现实。",
-        "love": "你很容易一头扎进热恋，把每一天都过成偶像剧。但真正的挑战在于激情退却后的平淡岁月。寻找一个既能陪你疯玩，又能在关键时刻拉住你风筝线的成熟伴侣。"
-    },
-    "ISFJ": {
-        "role": "守卫者 | 后台运营的压舱石",
-        "desc": "温和谦逊，细致入微。没有你在后台的死磕，前台的业务根本跑不起来。",
-        "career": "你是风险控制和合规审查的天然屏障。面对海量的数字资产确权资料、冗长的合同规范，只有你能做到不骄不躁、明察秋毫。你不追求聚光灯，但你极其负责的工作态度是整个交易所不可或缺的压舱石。",
-        "life": "你总是那个默默把一切收拾妥当的人，但这也让你容易受委屈。你的善良必须带点锋芒。今天下班后，推掉那些不属于你的麻烦事，给自己买一束花，好好吃一顿大餐。",
-        "love": "你的爱如春风化雨，润物无声。你记得所有的纪念日，了解伴侣所有的喜好。你渴望一段稳定、忠诚、相互扶持的传统关系。警惕在感情中一味妥协，失去自我。"
-    },
-    "ESFJ": {
-        "role": "执政官 | 交易生态的粘合剂",
-        "desc": "八面玲珑，热心肠。你能把整个交易所上下左右的关系理得明明白白。",
-        "career": "你是天然的 BD（商务拓展）和生态运营专家。无论是与市局相关部门保持良好沟通，还是维系挂牌数商的活跃度，你都游刃有余。你能敏锐察觉到利益相关方的诉求，把极其复杂的资源盘活。",
-        "life": "你极度在乎别人对你的评价，这让你活得有些累。尝试摆脱“老好人”的标签，建立自己内在的评价标准。学会一个人独处，享受哪怕没有人为你点赞的平静时光。",
-        "love": "你极其顾家，喜欢把伴侣介绍给自己的每一个朋友。你把家庭经营得温馨热闹。但在感情中要警惕“我是为你好”式的过度控制，给伴侣留出足够的呼吸空间。"
-    },
-    "ISTP": {
-        "role": "鉴赏家 | 交易系统的冷酷手术刀",
-        "desc": "人狠话不多，实操能力点满。少整虚的，直接看底层数据和代码逻辑。",
-        "career": "极度适合处理突发性的系统风控危机。当别人在会议室里争论不休时，你已经一头扎进系统日志和底层规则里，把引发危机的 Bug 给修复了。你讨厌形式主义的 PPT，崇尚“用结果说话”。",
-        "life": "你需要极强的感官刺激来确认自己的存在感。周末去玩极品飞车、攀岩或者闷头组装一台极其复杂的机械模型，这是你疏解高压工作最好的方式。",
-        "love": "你不擅长谈论感情，你觉得爱就是“遇到事了帮你解决”。你可能会通过帮伴侣修好电脑、解决实际困难来表达爱意。你需要一个独立、不黏人、不矫情的酷伴侣。"
-    },
-    "ISFP": {
-        "role": "探险家 | 数据美学的吟游诗人",
-        "desc": "随性自由，极具审美。工作对你而言不仅是打卡，更是表达品味的方式。",
-        "career": "在冰冷的数据交易所里，你是少有的“艺术家”气质。你适合从事数字资产的包装、交互界面的优化、品牌视觉的把控。严苛的合同规范会让你窒息，你需要在柔性的、有美感的工作中发挥天赋。",
-        "life": "你极其厌恶冲突和职场政治，只想守着自己的一亩三分地岁月静好。把你的工位或者书房布置成一个极具氛围感的空间，点上香薰，远离外界的喧嚣。",
-        "love": "你极其温柔，有着超强的感知力。你喜欢一切顺其自然，讨厌被逼婚或被要求规划五年后的未来。对你来说，两个人窝在沙发里听一首好听的歌，就是最顶级的浪漫。"
-    },
-    "ESTP": {
-        "role": "企业家 | 数据浪潮的冲浪手",
-        "desc": "胆大心细，极其敏锐。在数据变现的风口上，你的嗅觉比谁都灵敏。",
-        "career": "风险极高的数字资产创新交易是你的主场。你极具商业嗅觉，总能在法律合规的边缘疯狂试探并找到最赚钱的交易模式。你执行力极强，能在千钧一发之际拍板，是带兵打仗的猛将。",
-        "life": "平淡的生活会让你发疯，你永远在追求下一个刺激点。多去尝试跨界的社交，你的圈子越广，你获得的能量就越足。但请务必在财务和健康上给自己留足安全底线。",
-        "love": "你魅力四射，在情场上往往游刃有余。你追求激情和新鲜感，但容易在关系趋于平淡时感到厌倦。真正的成熟，是懂得在平平淡淡的长久相伴中，发现不断更新的乐趣。"
-    },
-    "ESFP": {
-        "role": "表演者 | 数据发布会上的超级巨星",
-        "desc": "天生 C 位，永远热烈。只要有你在，交易所的氛围就绝不会沉闷。",
-        "career": "你极其适合代表交易所对外发声，无论是主持大型数据产品发布会、还是接待外部参观团。你的热情和极佳的表现力，能把枯燥的数据要素讲得生动有趣。死板的幕后风控审核绝对会毁了你的才华。",
-        "life": "“今朝有酒今朝醉”是你的座右铭。不要为了假装深刻而去读那些让你头疼的宏大理论。你的快乐、纯粹和极具感染力的笑容，本身就是这个世界非常稀缺的财富。",
-        "love": "你的爱情必须是轰轰烈烈的，绝不藏着掖着。你喜欢高调秀恩爱，也需要伴侣能够热烈地回应你。找一个懂得欣赏你的光芒，并且愿意陪你把生活折腾得热气腾腾的人。"
-    }
+mbti_details = {
+    "INTJ": {"role": "首席制度架构师 / CSO", "desc": "数据要素世界的“造物主”，构建严密的数据治理公理体系。", "tags": ["逻辑闭环", "顶层设计", "制度自信"]},
+    "INTP": {"role": "风控模型专家 / 首席科学家", "desc": "穿透迷雾，寻找业务背后底层的逻辑漏洞与算力平衡。", "tags": ["黑客思维", "算法驱动", "极致解构"]},
+    "ISTJ": {"role": "首席合规审查官 / 运营基石", "desc": "交易所的守夜人，名字本身就是安全、严谨、零失误的代名词。", "tags": ["绝对合规", "程序正义", "数据护法"]},
+    "ESTJ": {"role": "业务统筹总监 / COO", "desc": "项目推进器，将复杂政策转化为可落地的KPI体系。", "tags": ["统帅力", "结果主义", "流程大师"]},
+    "INFJ": {"role": "产业生态智库 / 战略合伙人", "desc": "具备极强的行业共情能力，预判数据流通带来的深远变革。", "tags": ["远见卓识", "使命驱动", "人文视角"]},
+    "INFP": {"role": "品牌价值主张官 / 文化引领", "desc": "数据背后的灵魂捕捉者，构建动人的数商生态故事。", "tags": ["感召力", "价值观构建", "组织粘合"]},
+    "ENTJ": {"role": "市场开拓领军人 / 核心合伙人", "desc": "天生的掠夺者与建设者，在数据产品化无人区中强势开路。", "tags": ["开疆拓土", "战略铁腕", "极速成交"]},
+    "ENTP": {"role": "产品创新顾问 / 业务极客", "desc": "交易规则的创新颠覆者，致力于寻找下一代交易范式。", "tags": ["模式创新", "辩才无碍", "思维跳变"]},
+    "ENFJ": {"role": "数商成功与生态总监", "desc": "交易所的魅力中心，将竞争对手转化为战略盟友。", "tags": ["关系枢纽", "温情领导力", "利益协调"]},
+    "ENFP": {"role": "资源链接大使 / 活动策划主管", "desc": "生态火苗，让每一场路演都变成数据要素市场的信仰充值。", "tags": ["无限创意", "跨界纽带", "热情驱动"]},
+    "ISFJ": {"role": "高级行政主管 / 内部运营", "desc": "最坚韧的底层支点，通过极致细节支撑起整个平台的信誉。", "tags": ["利他主义", "执行力巅峰", "运营专家"]},
+    "ESFJ": {"role": "商务关系主管 / 渠道主管", "desc": "超级连接器，擅长经营多维商务关系，业务的润滑剂。", "tags": ["协作典范", "细节控制", "社会化支撑"]},
+    "ISTP": {"role": "危机管理专家 / 技术压舱石", "desc": "数据底座拆弹专家，对事实负责，故障时的唯一指望。", "tags": ["极简实干", "危机直觉", "技术硬核"]},
+    "ISFP": {"role": "视觉交互与品牌设计专家", "desc": "赋予数据美学价值，提升资产路演的颜值与质感。", "tags": ["审美溢价", "感官叙事", "独立纯粹"]},
+    "ESTP": {"role": "大客户成交官 / 谈判先锋", "desc": "数据交易的猎手，捕捉转瞬即逝的市场红利与空间。", "tags": ["现场感", "博弈高手", "结果收割"]},
+    "ESFP": {"role": "公共关系与外联大使", "desc": "交易所形象代言人，将复杂逻辑转化为传播话术的天赋。", "tags": ["表现力", "当下主义", "快乐源泉"]}
 }
 
-# --- 5. 状态管理 ---
+# --- 5. 状态管理与时间追踪 ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = 0
-if 'scores' not in st.session_state:
-    st.session_state.scores = {"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
+if 'total_scores' not in st.session_state:
+    st.session_state.total_scores = {"E": 0, "S": 0, "T": 0, "J": 0}
+if 'start_time' not in st.session_state:
+    st.session_state.start_time = None
+if 'end_time' not in st.session_state:
+    st.session_state.end_time = None
 
-def answer_clicked(dimension):
-    st.session_state.scores[dimension] += 1
+def answer_clicked(val, dim):
+    if st.session_state.current_q == 0:
+        st.session_state.start_time = time.time()  # 记录潜意识决策开始瞬间
+    st.session_state.total_scores[dim] += (val - 3)
     st.session_state.current_q += 1
+    if st.session_state.current_q == 40:
+        st.session_state.end_time = time.time()  # 记录完成瞬间
 
-# --- 6. 核心渲染逻辑 ---
-st.title("📈 SDE 专属：数据要素菁英性格图谱")
-st.markdown("专为上海数据交易所团队定制（共 32 题）。在复杂的合规与创新博弈中，测出你真实的职场与灵魂底色。")
+# --- 6. 交互界面渲染 ---
+st.markdown("<h1>SDE 全息人才图谱</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#00f3ff; font-size:12px; margin-top:-5px; letter-spacing:1px; opacity:0.8;'>DATA ELEMENT ELITE MATRIX v12.0</p>", unsafe_allow_html=True)
 
-total_q = len(questions)
-
-if st.session_state.current_q < total_q:
-    progress = st.session_state.current_q / total_q
-    st.progress(progress)
-    st.caption(f"深度测算中: {st.session_state.current_q + 1} / {total_q}")
-    st.markdown("<br>", unsafe_allow_html=True) 
+if st.session_state.current_q < len(questions):
+    q_data = questions[st.session_state.current_q]
+    st.progress((st.session_state.current_q + 1) / 40)
+    st.markdown(f"<div style='text-align:right; font-size:11px; color:#00f3ff; margin-top:-10px; opacity:0.7;'>神经元扫描：{st.session_state.current_q + 1} / 40</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='margin: 30px 0; min-height:85px;'><h4 style='line-height:1.6; font-size:17px; color:#fff !important;'>{q_data['q']}</h4></div>", unsafe_allow_html=True)
     
-    current_item = questions[st.session_state.current_q]
-    st.markdown(f"#### {current_item['q']}")
-    st.markdown("<br>", unsafe_allow_html=True) 
-    
-    # 选项区
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button(current_item['A'][0], use_container_width=True):
-            answer_clicked(current_item['A'][1])
+    opts = [("完全背离职业直觉", 1), ("较不符合习惯方式", 2), ("视具体业务场景而定", 3), ("比较符合决策风格", 4), ("精准复刻我的思维", 5)]
+    for text, val in opts:
+        if st.button(text, key=f"q_{st.session_state.current_q}_{val}"):
+            answer_clicked(val, q_data['dim'])
             st.rerun()
-    with col2:
-        if st.button(current_item['B'][0], use_container_width=True):
-            answer_clicked(current_item['B'][1])
-            st.rerun()
-
 else:
-    # 完成测试，触发满屏 666 和 撒花
-    st.progress(1.0)
-    st.balloons()
-    trigger_666_effect() 
+    # 触发赛博烟花
+    trigger_cyber_fireworks()
     
-    # 计算逻辑
-    scores = st.session_state.scores
-    mbti_result = ""
-    mbti_result += "E" if scores["E"] >= scores["I"] else "I"
-    mbti_result += "S" if scores["S"] >= scores["N"] else "N"
-    mbti_result += "T" if scores["T"] >= scores["F"] else "F"
-    mbti_result += "J" if scores["J"] >= scores["P"] else "P"
+    res = st.session_state.total_scores
+    mbti = ("E" if res["E"] >= 0 else "I") + ("S" if res["S"] >= 0 else "N") + ("T" if res["T"] >= 0 else "F") + ("J" if res["J"] >= 0 else "P")
+    data = mbti_details.get(mbti)
     
-    profile_data = mbti_profiles.get(mbti_result, mbti_profiles["INTJ"]) 
-    
-    # 结果展示
+    # 核心结果
     st.markdown(f"""
     <div class="result-card">
-        <p style="margin:0; font-size: 18px; opacity: 0.9; letter-spacing: 2px;">你的数据核心驱动引擎</p>
-        <p class="mbti-text">{mbti_result}</p>
-        <p class="mbti-role">【 {profile_data['role']} 】</p>
-        <p class="mbti-desc">"{profile_data['desc']}"</p>
+        <div style="font-size:13px; color:#ffd700; letter-spacing:3px; margin-bottom:15px; opacity:0.8;">核心资产解码完成</div>
+        <div class="mbti-code">{mbti}</div>
+        <div class="mbti-post">【 {data['role']} 】</div>
+        <p style="color:#cbd5e1 !important; font-size:15px; padding:0 10px;">{data['desc']}</p>
+        <div style="margin-top:20px;">
+            {" ".join([f'<span class="cyber-tag">{t}</span>' for t in data['tags']])}
+        </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # --- 新增装逼功能 1：3D 交互式动态雷达图 ---
+    st.markdown("<div class='section-header'>🕸️ 核心算力拓扑矩阵 (可触控旋转)</div>", unsafe_allow_html=True)
     
-    st.markdown("### 🧭 你的 SDE 专属进阶指南")
-    tab1, tab2, tab3 = st.tabs(["💼 业务与合规", "🌱 能量与生活", "❤️ 情感与羁绊"])
+    def get_intensity(score): return max(10, min(100, 50 + (score / 20 * 50)))
+    val_E, val_I = get_intensity(res["E"]), 100 - get_intensity(res["E"])
+    val_S, val_N = get_intensity(res["S"]), 100 - get_intensity(res["S"])
+    val_T, val_F = get_intensity(res["T"]), 100 - get_intensity(res["T"])
+    val_J, val_P = get_intensity(res["J"]), 100 - get_intensity(res["J"])
     
-    with tab1:
-        st.markdown(f"<div class='advice-box'><b>核心建议：</b><br>{profile_data['career']}</div>", unsafe_allow_html=True)
-    with tab2:
-        st.markdown(f"<div class='advice-box'><b>核心建议：</b><br>{profile_data['life']}</div>", unsafe_allow_html=True)
-    with tab3:
-        st.markdown(f"<div class='advice-box'><b>核心建议：</b><br>{profile_data['love']}</div>", unsafe_allow_html=True)
+    categories = ['外向驱动(E)', '实务落地(S)', '理性风控(T)', '秩序掌控(J)', '内向沉思(I)', '宏观直觉(N)', '感性共鸣(F)', '灵活适配(P)']
+    values = [val_E, val_S, val_T, val_J, val_I, val_N, val_F, val_P]
+    values_loop = values + [values[0]]
+    categories_loop = categories + [categories[0]]
     
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    if st.button("🔄 重启沙盘测算", use_container_width=True):
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(
+        r=values_loop, theta=categories_loop, fill='toself',
+        fillcolor='rgba(0, 243, 255, 0.25)', line=dict(color='#00f3ff', width=2),
+        marker=dict(color='#ffd700', size=6, symbol='diamond')
+    ))
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, showticklabels=False, range=[0, 100], gridcolor='rgba(0, 243, 255, 0.1)'),
+            angularaxis=dict(tickfont=dict(color='#00f3ff', size=13), linecolor='rgba(0, 243, 255, 0.3)', gridcolor='rgba(0, 243, 255, 0.15)')
+        ),
+        showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=30, r=30, t=20, b=20)
+    )
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+    # --- 新增装逼功能 2：决策算力速率追踪 ---
+    st.markdown("<div class='section-header'>⏱️ 潜意识决策引擎分析</div>", unsafe_allow_html=True)
+    time_taken = st.session_state.end_time - st.session_state.start_time
+    if time_taken < 100:
+        speed_tag, speed_desc = "高频量化并发 (极速直觉)", "您的潜意识决策引擎处于超频状态。擅长在瞬息万变的交易盘口进行瞬时压迫性决策，具有极高的直觉穿透力。"
+        color = "#ff00ff"
+    elif time_taken < 220:
+        speed_tag, speed_desc = "均衡算力调度 (敏捷研判)", "直觉与逻辑的完美平衡。能在有限信息下快速建立风控模型，是标准数据资产化项目中最稳健的决策节拍。"
+        color = "#00f3ff"
+    else:
+        speed_tag, speed_desc = "深度逻辑推演 (战略风控)", "决策引擎处于深潜状态。擅长处理极其庞杂的合规变量与底层架构规划，绝不盲从，是顶层制度设计的天然基石。"
+        color = "#ffd700"
+        
+    st.markdown(f"""
+    <div class='expert-box' style='border-left: 4px solid {color};'>
+        <div style='color:{color}; font-size:16px; font-weight:bold; margin-bottom:8px;'>引擎状态：{speed_tag}</div>
+        <div style='color:#94a3b8; font-size:13px;'>响应耗时：{int(time_taken)} 秒<br><br>{speed_desc}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 底部专属卡片
+    st.markdown("<div class='section-header'>🪪 终端社交识别卡</div>", unsafe_allow_html=True)
+    share_card = f"""【SDE 全息人才图谱解码】
+======================
+◈ 基因序列：{mbti}
+◈ 系统职衔：{data['role']}
+◈ 核心算力：{' · '.join(data['tags'])}
+◈ 引擎频段：{speed_tag.split(' ')[0]}
+======================
+解码数据价值，定义要素未来
+（来自SDE内部测算终端）"""
+    st.code(share_card, language="text")
+
+    if st.button("🔄 断开连接并重启系统", use_container_width=True):
         st.session_state.current_q = 0
-        st.session_state.scores = {"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
+        st.session_state.total_scores = {"E": 0, "S": 0, "T": 0, "J": 0}
+        st.session_state.start_time = None
+        st.session_state.end_time = None
         st.rerun()
 
-# --- 7. 专属底部署名 ---
+# --- 7. 版权声明 ---
 st.markdown("""
-    <div class="footer">
-        Powered by 数据要素核心引擎<br>
-        © 版权归属无名逆流所有
+    <div style='text-align:center; margin-top:60px; margin-bottom:20px; font-family:monospace;'>
+        <div style='color:#00f3ff; font-size:10px; opacity:0.6; letter-spacing:1px; margin-bottom:5px;'>
+            POWERED BY DATA ELEMENT ENGINE
+        </div>
+        <div style='color:#ffd700; font-size:12px; font-weight:bold; letter-spacing:2px; text-shadow:0 0 10px rgba(255,215,0,0.5);'>
+            © 版权归属无名逆流所有
+        </div>
     </div>
 """, unsafe_allow_html=True)
